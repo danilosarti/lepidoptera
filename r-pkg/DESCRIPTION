@@ -1,6 +1,6 @@
 Package: lepidoptera
 Title: Domain-Agnostic Causal Simulation Engine with Mixed Variable Types
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: person("Danilo", "Sarti",
     email = "danilosarti@rcsi.ie",
     role = c("aut", "cre"),
@@ -21,8 +21,8 @@ Description: A domain-agnostic simulation engine for structural causal models
     Systems serialise to JSON for cross-language portability with the companion
     Python package.
 License: MIT + file LICENSE
-URL: https://github.com/daniloasarti/lepidoptera
-BugReports: https://github.com/daniloasarti/lepidoptera/issues
+URL: https://github.com/danilosarti/lepidoptera
+BugReports: https://github.com/danilosarti/lepidoptera/issues
 Encoding: UTF-8
 Depends: R (>= 4.1.0)
 Imports:

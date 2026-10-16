@@ -1,3 +1,14 @@
+# lepidoptera 0.1.2
+
+## Bug fixes
+
+* Fixed D-vine conditional sampling for mechanisms with exactly 2 parents
+  (trivariate vine): replaced the `rosenblatt()` / `inverse_rosenblatt()`
+  pipeline—whose behaviour changed for single-row matrices in newer
+  **rvinecopulib** versions—with an explicit sequential h-function algorithm
+  using `pair_copulas()`.  Spearman correlations in the simulated output now
+  correctly reflect the fitted dependence structure.
+
 # lepidoptera 0.1.1
 
 ## Bug fixes

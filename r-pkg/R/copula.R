@@ -276,22 +276,65 @@
 .rvine_conditional_sample <- function(u_parents, rv_model) {
   k <- length(rv_model$parents)
 
+  # Helper: call hbicop and extract the scalar result regardless of API version.
+  # Old rvinecopulib returns a matrix; new returns a plain numeric vector.
+  .h <- function(a, b, cop, cond_var, inverse = FALSE) {
+    res <- rvinecopulib::hbicop(matrix(c(a, b), nrow = 1L), cop,
+                                cond_var = cond_var, inverse = inverse)
+    if (is.matrix(res)) {
+      as.double(res[1L, if (cond_var == 1L) 2L else 1L])
+    } else {
+      as.double(res[[1L]])
+    }
+  }
+
   if (rv_model$type == "bicop") {
+    # Bivariate: h^{-1}(v | u_parent; C) — D-vine order is (parent, child),
+    # so cond_var = 1 conditions on the parent column.
     v_child <- runif(1L)
-    # unname() prevents rvinecopulib from reordering columns by name
-    u_mat   <- matrix(c(unname(u_parents[[1L]]), v_child), nrow = 1L)
-    result  <- rvinecopulib::hbicop(u_mat, rv_model$model,
-                                    cond_var = 1L, inverse = TRUE)
-    # hbicop returns a numeric vector in new rvinecopulib, a matrix in old
-    u_child <- if (is.matrix(result)) as.double(result[1L, 2L]) else as.double(result[[1L]])
+    u_child <- .h(unname(u_parents[[1L]]), v_child,
+                  rv_model$model, cond_var = 1L, inverse = TRUE)
+
+  } else if (k == 2L) {
+    # Trivariate D-vine — explicit sequential h-function algorithm.
+    # Avoids rosenblatt() / inverse_rosenblatt() whose API changed in newer
+    # rvinecopulib versions.
+    #
+    # D-vine order: (u1 = parent1, u2 = parent2, u3 = child)
+    # Pair copulas:
+    #   C_12    = pcs[[1]][[1]]   (tree 1, pair 1-2)
+    #   C_23    = pcs[[1]][[2]]   (tree 1, pair 2-3)
+    #   C_13_2  = pcs[[2]][[1]]   (tree 2, pair 1-3|2)
+    #
+    # Rosenblatt coordinate of the child:
+    #   v3 = h(F_{3|2}(u3|u2) | F_{1|2}(u1|u2) ; C_{13|2})
+    #
+    # Inversion for simulation:
+    #   a    = F_{1|2}(u1|u2)    = h(u1|u2 ; C_12)
+    #   w    ~ U(0,1)            [fresh uniform replacing v3]
+    #   temp = F_{3|2}(u3|u2) s.t. h(temp|a; C_{13|2}) = w
+    #        = h^{-1}(w | a ; C_{13|2})
+    #   u3   = h^{-1}(temp | u2 ; C_23)
+    pcs    <- rvinecopulib::pair_copulas(rv_model$model)
+    C_12   <- pcs[[1L]][[1L]]
+    C_23   <- pcs[[1L]][[2L]]
+    C_13_2 <- pcs[[2L]][[1L]]
+
+    u1 <- unname(u_parents[[1L]])
+    u2 <- unname(u_parents[[2L]])
+
+    a       <- .h(u2, u1, C_12,   cond_var = 1L)                 # h(u1|u2; C_12)
+    w       <- runif(1L)
+    temp    <- .h(a,  w,  C_13_2, cond_var = 1L, inverse = TRUE) # h^{-1}(w|a; C_{13|2})
+    u_child <- .h(u2, temp, C_23, cond_var = 1L, inverse = TRUE) # h^{-1}(temp|u2; C_23)
 
   } else {
-    # unname() is critical: named vectors cause rvinecopulib to reorder columns
-    u_row         <- matrix(unname(c(u_parents, 0.5)), nrow = 1L)
-    v_row         <- as.matrix(rvinecopulib::rosenblatt(u_row, rv_model$model))
+    # General multivariate D-vine (d > 3): Rosenblatt transform.
+    u_row  <- matrix(unname(c(u_parents, 0.5)), nrow = 1L)
+    v_row  <- as.matrix(rvinecopulib::rosenblatt(u_row, rv_model$model))
     v_row[1L, k + 1L] <- runif(1L)
-    u_full        <- as.matrix(rvinecopulib::inverse_rosenblatt(v_row, rv_model$model))
-    u_child       <- as.double(u_full[1L, k + 1L])
+    u_full <- as.matrix(rvinecopulib::inverse_rosenblatt(v_row, rv_model$model))
+    u_child <- as.double(u_full[1L, k + 1L])
   }
 
   # Clamp to open unit interval to avoid ECDF boundary issues
