@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lepidoptera — Step-by-step Tutorial</title>
+<link rel="icon" type="image/svg+xml" href="luna_moth.svg">
+<style>
+  /* ── Luna Moth palette ──────────────────────────────────────
+     mint wings · warm brown body · cream paper · gold spots  */
+  :root {
+    --bg:        #f5f0e6;   /* washi paper cream             */
+    --surface:   #ece6d6;   /* slightly deeper cream         */
+    --surface2:  #e2dbc8;   /* card / table header           */
+    --border:    #c8bda4;   /* warm tan line                 */
+    --border-s:  #ddd4be;   /* softer border                 */
+
+    --mint:      #5aaeaa;   /* luna moth wing — primary      */
+    --mint-dim:  #d6edea;   /* very light mint tint          */
+    --mint-deep: #38827e;   /* darker mint for text on light */
+
+    --brown:     #8b6340;   /* moth body warm brown          */
+    --brown-dim: #f0e6d6;   /* light brown tint              */
+
+    --gold:      #9e8230;   /* wing spots gold               */
+    --gold-dim:  #f5ecd2;   /* light gold tint               */
+
+    --sage:      #5e8a68;   /* forest sage accent            */
+    --sage-dim:  #d8eddc;   /* light sage tint               */
+
+    --mauve:     #8058a0;   /* soft Japanese mauve / purple  */
+    --mauve-dim: #eddaf8;   /* light mauve tint              */
+
+    --text:      #2e2018;   /* dark warm charcoal            */
+    --muted:     #7a6858;   /* warm muted brown-grey         */
+    --faint:     #a8997e;   /* very faint, captions          */
+
+    --font-mono: 'Fira Code','Cascadia Code','Menlo',Consolas,monospace;
+    --font-sans: 'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic','Segoe UI',system-ui,sans-serif;
+    --shadow-s:  0 1px 4px rgba(80,50,20,.08), 0 2px 12px rgba(80,50,20,.05);
+    --shadow-m:  0 2px 8px rgba(80,50,20,.10), 0 4px 24px rgba(80,50,20,.07);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+
+  body {
+    background: var(--bg);
+    /* subtle paper grain */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.8;
+    padding: 0 1rem 7rem;
+  }
+
+  .wrap { max-width: 840px; margin: 0 auto; }
+
+  /* ── Header ── */
+  header {
+    border-bottom: 1px solid var(--border-s);
+    padding: 3.5rem 0 2rem;
+    margin-bottom: 3rem;
+    position: relative;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0;
+    width: 60px; height: 2px;
+    background: var(--mint);
+  }
+  header h1 {
+    font-size: 1.9rem;
+    color: var(--mint-deep);
+    letter-spacing: -.3px;
+    font-weight: 600;
+  }
+  header p { color: var(--muted); margin-top: .5rem; font-size: .95rem; }
+
+  /* ── TOC ── */
+  nav.toc {
+    background: var(--surface);
+    border: 1px solid var(--border-s);
+    border-radius: 14px;
+    padding: 1.6rem 2rem;
+    margin-bottom: 3rem;
+    box-shadow: var(--shadow-s);
+  }
+  nav.toc h2 {
+    font-size: .72rem; text-transform: uppercase; letter-spacing: 2.5px;
+    color: var(--faint); margin-bottom: 1rem;
+  }
+  nav.toc ol { padding-left: 1.4rem; }
+  nav.toc li { margin: .28rem 0; }
+  nav.toc a  { color: var(--mint-deep); text-decoration: none; font-size: .94rem; }
+  nav.toc a:hover { color: var(--mint); text-decoration: underline; }
+
+  /* ── Sections ── */
+  section { margin-bottom: 4.5rem; }
+
+  .step-label {
+    display: inline-block;
+    background: var(--mint-dim);
+    color: var(--mint-deep);
+    font-size: .68rem; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    border-radius: 20px;
+    padding: .18rem .75rem;
+    margin-bottom: .9rem;
+  }
+
+  h2 {
+    font-size: 1.38rem; color: var(--text);
+    font-weight: 600;
+    margin-bottom: .8rem; padding-bottom: .5rem;
+    border-bottom: 1px solid var(--border-s);
+  }
+
+  h3 { font-size: 1rem; color: var(--brown); margin: 1.6rem 0 .5rem; font-weight: 600; }
+
+  p { margin-bottom: .9rem; }
+
+  /* ── Code blocks ── */
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border-s);
+    border-left: 3px solid var(--mint);
+    border-radius: 0 10px 10px 0;
+    padding: 1.2rem 1.5rem;
+    overflow-x: auto;
+    margin: 1rem 0 1.5rem;
+    box-shadow: var(--shadow-s);
+  }
+  pre code {
+    font-family: var(--font-mono);
+    font-size: .875rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  /* Syntax: warm light-theme colours */
+  .kw  { color: #7a3a90; }             /* keywords: soft mauve    */
+  .fn  { color: var(--mint-deep); }    /* function calls: deep mint */
+  .str { color: #3a7038; }             /* strings: forest green   */
+  .num { color: #9a6418; }             /* numbers: warm amber     */
+  .cmt { color: var(--faint); font-style: italic; } /* comments     */
+  .arg { color: #3050a0; }             /* named args: soft indigo */
+  .op  { color: #8a3048; }             /* operators: soft burgundy*/
+  .var { color: var(--text); }
+
+  /* ── Callout boxes ── */
+  .callout {
+    border-left: 3px solid;
+    border-radius: 0 10px 10px 0;
+    padding: .9rem 1.25rem;
+    margin: 1.2rem 0;
+    font-size: .93rem;
+    box-shadow: var(--shadow-s);
+  }
+  .callout.info   { border-color: var(--mint);  background: var(--mint-dim); }
+  .callout.tip    { border-color: var(--gold);  background: var(--gold-dim); }
+  .callout.result { border-color: var(--sage);  background: var(--sage-dim); }
+  .callout .label {
+    font-weight: 700; font-size: .75rem;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    margin-bottom: .3rem;
+  }
+  .callout.info   .label { color: var(--mint-deep); }
+  .callout.tip    .label { color: var(--gold);       }
+  .callout.result .label { color: var(--sage);       }
+
+  /* ── Tables ── */
+  table { width:100%; border-collapse:collapse; margin:1rem 0 1.5rem; font-size:.9rem; }
+  th {
+    background: var(--surface2); color: var(--muted);
+    text-align:left; padding:.6rem 1rem;
+    font-size:.75rem; text-transform:uppercase; letter-spacing:1px;
+    border-bottom: 1px solid var(--border);
+  }
+  td { padding:.6rem 1rem; border-bottom:1px solid var(--border-s); vertical-align:top; }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--mint-deep); font-family: var(--font-mono); font-size:.85rem; }
+  td:nth-child(2){ color: var(--brown); }
+
+  /* ── Output block ── */
+  .output {
+    background: #eee8d8;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    font-family: var(--font-mono); font-size:.82rem; line-height:1.65;
+    color: var(--muted); margin:1rem 0 1.5rem; white-space:pre;
+  }
+
+  /* ── Diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border-s);
+    border-radius: 14px;
+    padding: 1.5rem 1.25rem 1rem;
+    margin: 1.3rem 0;
+    box-shadow: var(--shadow-m);
+    overflow-x: auto;
+  }
+  .diagram-caption {
+    text-align: center; font-size: .76rem; color: var(--faint);
+    margin-top: .8rem; letter-spacing: .4px;
+  }
+
+  hr { border:none; border-top:1px solid var(--border-s); margin:3rem 0; }
+
+  footer {
+    color: var(--faint); font-size:.82rem; text-align:center;
+    margin-top:5rem; padding-top:2rem; border-top:1px solid var(--border-s);
+  }
+
+  ul, ol { padding-left:1.4rem; margin-bottom:.9rem; }
+  li { margin:.3rem 0; }
+
+  /* ── Decorative moth accent ── */
+  .moth-accent {
+    position: absolute; right: 0; top: 0;
+    opacity: .12; width: 90px;
+    pointer-events: none;
+  }
+
+  /* ── Moth parade (decorative strip of specimens) ── */
+  .moth-parade {
+    text-align: center;
+    margin: 2.5rem 0 1.5rem;
+    padding: .5rem 0;
+    user-select: none;
+  }
+  .moth-parade--sm svg { max-width: 330px !important; opacity: .62 !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<header>
+  <!-- decorative watermark moth -->
+  <img src="luna_moth.svg"
+       aria-hidden="true"
+       style="position:absolute;right:-10px;top:-18px;width:160px;opacity:.10;pointer-events:none;transform:rotate(8deg)">
+
+  <h1 style="display:flex;align-items:center;gap:.6rem">
+    <img src="luna_moth.svg"
+         alt="Luna Moth"
+         style="height:2.2rem;width:2.2rem;flex-shrink:0;filter:drop-shadow(0 1px 3px rgba(90,174,170,.3))">
+    lepidoptera — step-by-step tutorial
+  </h1>
+  <p>Build your first causal simulation from scratch: choose features, wire the DAG, attach mechanisms, simulate a population, and run counterfactual interventions.</p>
+</header>
+
+<nav class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#s0">What we're building</a></li>
+    <li><a href="#s1">Install &amp; load</a></li>
+    <li><a href="#s2">Choose your features</a></li>
+    <li><a href="#s3">Declare the DAG</a></li>
+    <li><a href="#s4">Mechanisms for root nodes</a></li>
+    <li><a href="#s5">Mechanisms for dependent nodes (built-in)</a></li>
+    <li><a href="#s6">Write a custom mechanism</a></li>
+    <li><a href="#s7">Assemble &amp; finalize</a></li>
+    <li><a href="#s8">Simulate a population</a></li>
+    <li><a href="#s9">Explore the data</a></li>
+    <li><a href="#s10">Apply an intervention</a></li>
+    <li><a href="#s11">Compare baseline vs. intervened</a></li>
+    <li><a href="#s12">More interventions at a glance</a></li>
+    <li><a href="#s13">Counterfactual reasoning — the individual "what if?"</a></li>
+    <li><a href="#s14">Copula mechanism — dependence structure from data</a></li>
+    <li><a href="#s15">model_mechanism — wrap any pre-fitted model</a></li>
+  </ol>
+</nav>
+
+<!-- ── Moth specimen parade ──────────────────────────── -->
+<div class="moth-parade" aria-hidden="true">
+  <svg viewBox="0 0 520 96" xmlns="http://www.w3.org/2000/svg"
+       style="width:100%;max-width:560px;display:block;margin:0 auto;opacity:.84">
+
+    <!-- ① Peacock Eye (mauve · gold eyespots) @ cx=50 -->
+    <path d="M50,44 C42,28 14,20 8,30 C3,42 20,60 45,60" fill="#d4b4d8" stroke="#8058a0" stroke-width="1"/>
+    <path d="M50,44 C58,28 86,20 92,30 C97,42 80,60 55,60" fill="#d4b4d8" stroke="#8058a0" stroke-width="1"/>
+    <ellipse cx="22" cy="37" rx="8"   ry="6"   fill="#9e8230"/>
+    <ellipse cx="22" cy="37" rx="5"   ry="3.8" fill="#8058a0"/>
+    <ellipse cx="22" cy="37" rx="2.5" ry="2"   fill="#f2e4b0"/>
+    <ellipse cx="78" cy="37" rx="8"   ry="6"   fill="#9e8230"/>
+    <ellipse cx="78" cy="37" rx="5"   ry="3.8" fill="#8058a0"/>
+    <ellipse cx="78" cy="37" rx="2.5" ry="2"   fill="#f2e4b0"/>
+    <path d="M45,60 C30,66 14,74 12,80 C10,86 28,82 43,72" fill="#bfa0c4" stroke="#8058a0" stroke-width="1"/>
+    <path d="M55,60 C70,66 86,74 88,80 C90,86 72,82 57,72" fill="#bfa0c4" stroke="#8058a0" stroke-width="1"/>
+    <circle cx="22" cy="72" r="2.5" fill="#f2e4b0" opacity=".7"/>
+    <circle cx="78" cy="72" r="2.5" fill="#f2e4b0" opacity=".7"/>
+    <ellipse cx="50" cy="57" rx="3.5" ry="16"  fill="#4a2870"/>
+    <ellipse cx="50" cy="43" rx="3"   ry="3.5" fill="#6240a0"/>
+    <path d="M47,41 C42,30 36,20 30,13" stroke="#4a2870" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="30" cy="13" r="1.8" fill="#4a2870"/>
+    <path d="M53,41 C58,30 64,20 70,13" stroke="#4a2870" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="70" cy="13" r="1.8" fill="#4a2870"/>
+
+    <!-- ② Tiger Moth (gold · amber · brown bands) @ cx=154 -->
+    <path d="M154,42 C146,26 116,20 110,32 C106,44 122,58 148,56" fill="#e8c870" stroke="#9e8230" stroke-width="1"/>
+    <path d="M154,42 C162,26 192,20 198,32 C202,44 186,58 160,56" fill="#e8c870" stroke="#9e8230" stroke-width="1"/>
+    <path d="M124,26 C120,34 116,42 118,52" stroke="#8b6340" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".6"/>
+    <path d="M136,22 C131,32 128,42 130,52" stroke="#8b6340" stroke-width="1.2" fill="none" stroke-linecap="round" opacity=".55"/>
+    <path d="M184,26 C188,34 192,42 190,52" stroke="#8b6340" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".6"/>
+    <path d="M172,22 C177,32 180,42 178,52" stroke="#8b6340" stroke-width="1.2" fill="none" stroke-linecap="round" opacity=".55"/>
+    <path d="M148,56 C132,62 114,72 112,78 C110,84 128,80 144,68" fill="#c89838" stroke="#9e8230" stroke-width="1"/>
+    <path d="M160,56 C176,62 194,72 196,78 C198,84 180,80 164,68" fill="#c89838" stroke="#9e8230" stroke-width="1"/>
+    <circle cx="126" cy="70" r="3"   fill="#f2e4b0" opacity=".75"/>
+    <circle cx="182" cy="70" r="3"   fill="#f2e4b0" opacity=".75"/>
+    <circle cx="118" cy="78" r="2"   fill="#f2e4b0" opacity=".6"/>
+    <circle cx="190" cy="78" r="2"   fill="#f2e4b0" opacity=".6"/>
+    <ellipse cx="154" cy="53" rx="4"   ry="18" fill="#8b6340"/>
+    <ellipse cx="154" cy="36" rx="3.5" ry="4"  fill="#a07848"/>
+    <path d="M151,34 C146,24 141,16 136,10" stroke="#6a4020" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="136" cy="10" r="1.8" fill="#6a4020"/>
+    <path d="M157,34 C162,24 167,16 172,10" stroke="#6a4020" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="172" cy="10" r="1.8" fill="#6a4020"/>
+
+    <!-- ③ Luna Swallowtail (mint · cream spots · long tails) @ cx=260 — the star -->
+    <path d="M260,36 C246,18 210,10 204,24 C198,38 216,60 252,54" fill="#a8dcd8" stroke="#5aaeaa" stroke-width="1.3"/>
+    <path d="M260,36 C274,18 310,10 316,24 C322,38 304,60 268,54" fill="#a8dcd8" stroke="#5aaeaa" stroke-width="1.3"/>
+    <ellipse cx="222" cy="31" rx="7" ry="5" fill="#f2e4b0" opacity=".85" transform="rotate(-12 222 31)"/>
+    <ellipse cx="298" cy="31" rx="7" ry="5" fill="#f2e4b0" opacity=".85" transform="rotate(12 298 31)"/>
+    <path d="M260,36 C244,42 220,48 204,52" stroke="#5aaeaa" stroke-width=".5" fill="none" opacity=".35"/>
+    <path d="M260,36 C276,42 300,48 316,52" stroke="#5aaeaa" stroke-width=".5" fill="none" opacity=".35"/>
+    <path d="M252,54 C228,64 202,72 198,80 C196,86 216,84 234,74" fill="#8dd4ce" stroke="#5aaeaa" stroke-width="1.3"/>
+    <path d="M268,54 C292,64 318,72 322,80 C324,86 304,84 286,74" fill="#8dd4ce" stroke="#5aaeaa" stroke-width="1.3"/>
+    <ellipse cx="213" cy="66" rx="4" ry="3" fill="#f2e4b0" opacity=".7" transform="rotate(-8 213 66)"/>
+    <ellipse cx="307" cy="66" rx="4" ry="3" fill="#f2e4b0" opacity=".7" transform="rotate(8 307 66)"/>
+    <path d="M234,74 C228,80 220,88 214,93" stroke="#5aaeaa" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M234,74 C228,80 220,88 214,93" stroke="#8dd4ce"  stroke-width="2"   fill="none" stroke-linecap="round"/>
+    <path d="M286,74 C292,80 300,88 306,93" stroke="#5aaeaa" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M286,74 C292,80 300,88 306,93" stroke="#8dd4ce"  stroke-width="2"   fill="none" stroke-linecap="round"/>
+    <ellipse cx="260" cy="48" rx="4.5" ry="22" fill="#8b6340"/>
+    <line x1="260" y1="33" x2="260" y2="65" stroke="#a07848" stroke-width=".7" opacity=".4"/>
+    <ellipse cx="260" cy="28" rx="4" ry="3.5" fill="#a07848"/>
+    <path d="M257,26 C252,15 246,7 240,2"  stroke="#7a5030" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <circle cx="240" cy="2" r="2" fill="#7a5030"/>
+    <path d="M263,26 C268,15 274,7 280,2"  stroke="#7a5030" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <circle cx="280" cy="2" r="2" fill="#7a5030"/>
+
+    <!-- ④ Purple Morpho (mauve · iridescent sheen · cream edge spots) @ cx=366 -->
+    <path d="M366,42 C354,24 320,16 314,28 C310,40 328,60 360,58" fill="#c8a8e0" stroke="#8058a0" stroke-width="1"/>
+    <path d="M366,42 C378,24 412,16 418,28 C422,40 404,60 372,58" fill="#c8a8e0" stroke="#8058a0" stroke-width="1"/>
+    <path d="M316,32 C326,42 340,52 357,58" stroke="#e8d4f4" stroke-width="9" fill="none" opacity=".3" stroke-linecap="round"/>
+    <path d="M416,32 C406,42 392,52 375,58" stroke="#e8d4f4" stroke-width="9" fill="none" opacity=".3" stroke-linecap="round"/>
+    <circle cx="316" cy="37" r="3"   fill="#f2e4b0" opacity=".7"/>
+    <circle cx="317" cy="49" r="2.5" fill="#f2e4b0" opacity=".65"/>
+    <circle cx="416" cy="37" r="3"   fill="#f2e4b0" opacity=".7"/>
+    <circle cx="415" cy="49" r="2.5" fill="#f2e4b0" opacity=".65"/>
+    <path d="M360,58 C340,66 318,76 316,84 C314,88 334,84 352,72" fill="#b898d0" stroke="#8058a0" stroke-width="1"/>
+    <path d="M372,58 C392,66 414,76 416,84 C418,88 398,84 380,72" fill="#b898d0" stroke="#8058a0" stroke-width="1"/>
+    <circle cx="322" cy="76" r="2.5" fill="#f2e4b0" opacity=".68"/>
+    <circle cx="410" cy="76" r="2.5" fill="#f2e4b0" opacity=".68"/>
+    <ellipse cx="366" cy="55" rx="3.5" ry="17" fill="#52307a"/>
+    <ellipse cx="366" cy="40" rx="3"   ry="3.5" fill="#6a40a0"/>
+    <path d="M363,38 C358,28 352,18 346,12" stroke="#52307a" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="346" cy="12" r="1.8" fill="#52307a"/>
+    <path d="M369,38 C374,28 380,18 386,12" stroke="#52307a" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="386" cy="12" r="1.8" fill="#52307a"/>
+
+    <!-- ⑤ Ghost Sage Moth (pale sage · delicate veins) @ cx=472 -->
+    <path d="M472,44 C464,28 432,22 426,34 C422,46 440,62 464,60" fill="#d8eddc" stroke="#5e8a68" stroke-width="1"/>
+    <path d="M472,44 C480,28 512,22 514,34 C516,46 502,62 480,60" fill="#d8eddc" stroke="#5e8a68" stroke-width="1"/>
+    <path d="M472,44 C454,38 434,34 426,36" stroke="#5e8a68" stroke-width=".6" fill="none" opacity=".35"/>
+    <path d="M472,44 C452,50 436,54 428,58" stroke="#5e8a68" stroke-width=".6" fill="none" opacity=".3"/>
+    <path d="M472,44 C490,38 510,34 514,36" stroke="#5e8a68" stroke-width=".6" fill="none" opacity=".35"/>
+    <path d="M472,44 C492,50 508,54 514,58" stroke="#5e8a68" stroke-width=".6" fill="none" opacity=".3"/>
+    <path d="M464,60 C448,68 430,76 428,82 C426,86 442,82 456,72" fill="#c8e4cc" stroke="#5e8a68" stroke-width="1"/>
+    <path d="M480,60 C496,68 514,76 516,82 C518,86 502,82 484,72" fill="#c8e4cc" stroke="#5e8a68" stroke-width="1"/>
+    <circle cx="432" cy="70" r="2.5" fill="#9eb8a4" opacity=".5"/>
+    <circle cx="510" cy="70" r="2.5" fill="#9eb8a4" opacity=".5"/>
+    <ellipse cx="472" cy="55" rx="3.5" ry="17" fill="#3a6048"/>
+    <ellipse cx="472" cy="40" rx="3"   ry="3.5" fill="#4e7860"/>
+    <path d="M469,38 C464,28 458,18 452,12" stroke="#2a4838" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="452" cy="12" r="1.8" fill="#2a4838"/>
+    <path d="M475,38 C480,28 486,18 492,12" stroke="#2a4838" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="492" cy="12" r="1.8" fill="#2a4838"/>
+  </svg>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     0. WHAT WE'RE BUILDING
+═══════════════════════════════════════════════════════ -->
+<section id="s0">
+  <div class="step-label">Overview</div>
+  <h2>What we're building</h2>
+
+  <p>We'll simulate a <strong>student exam performance</strong> system — five causally connected variables that determine whether a student fails, passes, or earns a distinction.</p>
+  <p>The causal story: preparation time and prior knowledge jointly produce fatigue and an exam score, which is then mapped to an outcome grade.</p>
+
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 575 415" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:575px;display:block;margin:0 auto">
+      <defs>
+        <marker id="a0" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0,8 3,0 6" fill="#b8a888"/>
+        </marker>
+      </defs>
+
+      <!-- edges -->
+      <path d="M 82 83 C 82 148 72 162 72 188" stroke="#b8a888" stroke-width="1.5" fill="none" marker-end="url(#a0)"/>
+      <path d="M 170 68 C 240 68 258 148 262 188" stroke="#b8a888" stroke-width="1.5" fill="none" marker-end="url(#a0)"/>
+      <path d="M 398 83 C 398 148 352 168 342 188" stroke="#b8a888" stroke-width="1.5" fill="none" marker-end="url(#a0)"/>
+      <path d="M 167 210 L 210 210" stroke="#b8a888" stroke-width="1.5" fill="none" marker-end="url(#a0)"/>
+      <path d="M 295 233 L 295 318" stroke="#b8a888" stroke-width="1.5" fill="none" marker-end="url(#a0)"/>
+
+      <!-- study_hours (continuous = mint) -->
+      <rect x="22" y="43" width="165" height="42" rx="10" fill="#d6edea" stroke="#5aaeaa" stroke-width="1.5"/>
+      <text x="104" y="61" text-anchor="middle" fill="#2a6e6a" font-family="ui-monospace,monospace" font-size="12.5" font-weight="600">study_hours</text>
+      <text x="104" y="77" text-anchor="middle" fill="#5aaeaa" font-family="system-ui,sans-serif" font-size="9.5" opacity=".75">continuous · root</text>
+
+      <!-- prior_knowledge (ordinal = gold) -->
+      <rect x="330" y="43" width="190" height="42" rx="10" fill="#f5ecd2" stroke="#9e8230" stroke-width="1.5"/>
+      <text x="425" y="61" text-anchor="middle" fill="#6a5410" font-family="ui-monospace,monospace" font-size="12.5" font-weight="600">prior_knowledge</text>
+      <text x="425" y="77" text-anchor="middle" fill="#9e8230" font-family="system-ui,sans-serif" font-size="9.5" opacity=".75">ordinal · root</text>
+
+      <!-- fatigue (ordinal = gold) -->
+      <rect x="22" y="188" width="145" height="42" rx="10" fill="#f5ecd2" stroke="#9e8230" stroke-width="1.5"/>
+      <text x="94" y="206" text-anchor="middle" fill="#6a5410" font-family="ui-monospace,monospace" font-size="12.5" font-weight="600">fatigue</text>
+      <text x="94" y="222" text-anchor="middle" fill="#9e8230" font-family="system-ui,sans-serif" font-size="9.5" opacity=".75">ordinal · low/moderate/high</text>
+
+      <!-- exam_score (continuous = mint) -->
+      <rect x="207" y="188" width="175" height="42" rx="10" fill="#d6edea" stroke="#5aaeaa" stroke-width="1.5"/>
+      <text x="294" y="206" text-anchor="middle" fill="#2a6e6a" font-family="ui-monospace,monospace" font-size="12.5" font-weight="600">exam_score</text>
+      <text x="294" y="222" text-anchor="middle" fill="#5aaeaa" font-family="system-ui,sans-serif" font-size="9.5" opacity=".75">continuous · 0–100</text>
+
+      <!-- outcome (categorical = mauve) -->
+      <rect x="193" y="318" width="203" height="42" rx="10" fill="#eddaf8" stroke="#8058a0" stroke-width="1.5"/>
+      <text x="294" y="336" text-anchor="middle" fill="#52307a" font-family="ui-monospace,monospace" font-size="12.5" font-weight="600">outcome</text>
+      <text x="294" y="352" text-anchor="middle" fill="#8058a0" font-family="system-ui,sans-serif" font-size="9.5" opacity=".75">categorical · fail / pass / distinction</text>
+
+      <!-- legend -->
+      <rect x="22" y="382" width="11" height="11" rx="3" fill="#d6edea" stroke="#5aaeaa" stroke-width="1.5"/>
+      <text x="40" y="393" fill="#7a6858" font-family="system-ui,sans-serif" font-size="11">continuous</text>
+      <rect x="145" y="382" width="11" height="11" rx="3" fill="#f5ecd2" stroke="#9e8230" stroke-width="1.5"/>
+      <text x="163" y="393" fill="#7a6858" font-family="system-ui,sans-serif" font-size="11">ordinal</text>
+      <rect x="238" y="382" width="11" height="11" rx="3" fill="#eddaf8" stroke="#8058a0" stroke-width="1.5"/>
+      <text x="256" y="393" fill="#7a6858" font-family="system-ui,sans-serif" font-size="11">categorical</text>
+    </svg>
+    <div class="diagram-caption">Causal DAG — arrows show which variables influence which</div>
+  </div>
+
+  <div class="callout info">
+    <div class="label">Why this example?</div>
+    Five nodes, all three feature types, a clear causal story, and no domain expertise required. Every lepidoptera concept appears at least once.
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     1. INSTALL
+═══════════════════════════════════════════════════════ -->
+<section id="s1">
+  <div class="step-label">Step 1</div>
+  <h2>Install &amp; load</h2>
+  <p>lepidoptera lives in <code>r-pkg/</code>. Install it once with <code>devtools</code>, then load it like any package.</p>
+<pre><code><span class="cmt"># Run once from the repo root</span>
+<span class="fn">devtools</span><span class="op">::</span><span class="fn">install</span>(<span class="str">"r-pkg"</span>)
+
+<span class="cmt"># Load every session</span>
+<span class="kw">library</span>(<span class="var">lepidoptera</span>)
+</code></pre>
+  <div class="callout tip">
+    <div class="label">During development</div>
+    Replace <code>install()</code> with <code>devtools::load_all("r-pkg")</code> to pick up code changes without reinstalling.
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     2. CHOOSE FEATURES
+═══════════════════════════════════════════════════════ -->
+<section id="s2">
+  <div class="step-label">Step 2</div>
+  <h2>Choose your features</h2>
+
+  <p>Every variable in the system is a <strong>feature</strong> — a name, a type, and a domain.</p>
+
+  <table>
+    <tr><th>Property</th><th>What it means</th><th>Example</th></tr>
+    <tr><td>name</td><td>Variable identifier (snake_case)</td><td><code>exam_score</code></td></tr>
+    <tr><td>type</td><td><code>"continuous"</code>, <code>"categorical"</code>, or <code>"ordinal"</code></td><td><code>"continuous"</code></td></tr>
+    <tr><td>domain</td><td>Legal value bounds or level set</td><td><code>list(min=0, max=100)</code></td></tr>
+  </table>
+
+  <!-- Feature types visual -->
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 570 178" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:570px;display:block;margin:0 auto">
+      <defs>
+        <linearGradient id="cg" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stop-color="#c8e8e5"/>
+          <stop offset="100%" stop-color="#5aaeaa"/>
+        </linearGradient>
+      </defs>
+
+      <!-- CONTINUOUS -->
+      <rect x="8" y="8" width="172" height="162" rx="11" fill="#e8f4f2" stroke="#b8dcd8" stroke-width="1"/>
+      <text x="94" y="31" text-anchor="middle" fill="#38827e" font-family="system-ui" font-size="11" font-weight="700" letter-spacing="1.2">CONTINUOUS</text>
+      <rect x="22" y="44" width="144" height="13" rx="4" fill="url(#cg)"/>
+      <line x1="22" y1="59" x2="22" y2="65" stroke="#5aaeaa" stroke-width="1" opacity=".5"/>
+      <line x1="166" y1="59" x2="166" y2="65" stroke="#5aaeaa" stroke-width="1" opacity=".5"/>
+      <text x="22" y="76" fill="#9a8872" font-family="ui-monospace,monospace" font-size="9.5">min</text>
+      <text x="166" y="76" text-anchor="end" fill="#9a8872" font-family="ui-monospace,monospace" font-size="9.5">max</text>
+      <circle cx="48"  cy="50" r="3.5" fill="#fff" opacity=".9" stroke="#5aaeaa" stroke-width=".8"/>
+      <circle cx="72"  cy="50" r="3.5" fill="#fff" opacity=".9" stroke="#5aaeaa" stroke-width=".8"/>
+      <circle cx="99"  cy="50" r="3.5" fill="#fff" opacity=".9" stroke="#5aaeaa" stroke-width=".8"/>
+      <circle cx="138" cy="50" r="3.5" fill="#fff" opacity=".9" stroke="#5aaeaa" stroke-width=".8"/>
+      <circle cx="156" cy="50" r="3.5" fill="#fff" opacity=".9" stroke="#5aaeaa" stroke-width=".8"/>
+      <text x="94" y="100" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="10">values on a real scale</text>
+      <text x="94" y="116" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="10">e.g. 7.3, 14.2, 0.8 …</text>
+      <rect x="18" y="136" width="152" height="22" rx="5" fill="#d6edea" stroke="#b8dcd8"/>
+      <text x="94" y="151" text-anchor="middle" fill="#38827e" font-family="ui-monospace,monospace" font-size="9.5">list(min=0, max=100)</text>
+
+      <!-- ORDINAL -->
+      <rect x="195" y="8" width="182" height="162" rx="11" fill="#faf0e0" stroke="#d8c898" stroke-width="1"/>
+      <text x="286" y="31" text-anchor="middle" fill="#6a5410" font-family="system-ui" font-size="11" font-weight="700" letter-spacing="1.2">ORDINAL</text>
+      <rect x="210" y="44" width="42" height="28" rx="6" fill="#f5ecd2" stroke="#9e8230" stroke-width="1.4" opacity=".55"/>
+      <text x="231" y="62" text-anchor="middle" fill="#9e8230" font-family="ui-monospace,monospace" font-size="10.5">low</text>
+      <rect x="263" y="40" width="50" height="32" rx="6" fill="#f5ecd2" stroke="#9e8230" stroke-width="1.4" opacity=".8"/>
+      <text x="288" y="60" text-anchor="middle" fill="#9e8230" font-family="ui-monospace,monospace" font-size="10.5">medium</text>
+      <rect x="325" y="36" width="40" height="36" rx="6" fill="#f5ecd2" stroke="#9e8230" stroke-width="1.4"/>
+      <text x="345" y="59" text-anchor="middle" fill="#6a5410" font-family="ui-monospace,monospace" font-size="10.5">high</text>
+      <path d="M 210 83 L 365 83" stroke="#9e8230" stroke-width="1" opacity=".25"/>
+      <polygon points="365,80 372,83 365,86" fill="#9e8230" opacity=".25"/>
+      <text x="286" y="96" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="9.5">ordered: low &lt; medium &lt; high</text>
+      <text x="286" y="113" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="10">comparison operators work</text>
+      <rect x="208" y="136" width="156" height="22" rx="5" fill="#f5ecd2" stroke="#d8c898"/>
+      <text x="286" y="151" text-anchor="middle" fill="#6a5410" font-family="ui-monospace,monospace" font-size="9">list(levels=c("low","high"))</text>
+
+      <!-- CATEGORICAL -->
+      <rect x="390" y="8" width="172" height="162" rx="11" fill="#f5edf8" stroke="#cca8e0" stroke-width="1"/>
+      <text x="476" y="31" text-anchor="middle" fill="#52307a" font-family="system-ui" font-size="11" font-weight="700" letter-spacing="1.2">CATEGORICAL</text>
+      <rect x="402" y="44" width="40" height="28" rx="6" fill="#eddaf8" stroke="#8058a0" stroke-width="1.4"/>
+      <text x="422" y="62" text-anchor="middle" fill="#8058a0" font-family="ui-monospace,monospace" font-size="10">fail</text>
+      <rect x="452" y="44" width="40" height="28" rx="6" fill="#eddaf8" stroke="#8058a0" stroke-width="1.4"/>
+      <text x="472" y="62" text-anchor="middle" fill="#8058a0" font-family="ui-monospace,monospace" font-size="10">pass</text>
+      <rect x="402" y="81" width="90" height="28" rx="6" fill="#eddaf8" stroke="#8058a0" stroke-width="1.4"/>
+      <text x="447" y="99" text-anchor="middle" fill="#8058a0" font-family="ui-monospace,monospace" font-size="10">distinction</text>
+      <text x="476" y="127" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="10">no ordering implied</text>
+      <text x="476" y="141" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="10">unordered factor</text>
+      <rect x="400" y="149" width="152" height="22" rx="5" fill="#eddaf8" stroke="#cca8e0"/>
+      <text x="476" y="164" text-anchor="middle" fill="#52307a" font-family="ui-monospace,monospace" font-size="9">list(levels=c("a","b","c"))</text>
+    </svg>
+    <div class="diagram-caption">The three feature types and how their domains are declared</div>
+  </div>
+
+  <p>The five features for our system:</p>
+<pre><code><span class="fn">feature_spec</span>(<span class="str">"study_hours"</span>,    <span class="str">"continuous"</span>,  <span class="fn">list</span>(<span class="arg">min</span><span class="op">=</span><span class="num">0</span>,  <span class="arg">max</span><span class="op">=</span><span class="num">20</span>))
+<span class="fn">feature_spec</span>(<span class="str">"prior_knowledge"</span>, <span class="str">"ordinal"</span>,     <span class="fn">list</span>(<span class="arg">levels</span><span class="op">=</span><span class="fn">c</span>(<span class="str">"low"</span>,<span class="str">"medium"</span>,<span class="str">"high"</span>)))
+<span class="fn">feature_spec</span>(<span class="str">"fatigue"</span>,         <span class="str">"ordinal"</span>,     <span class="fn">list</span>(<span class="arg">levels</span><span class="op">=</span><span class="fn">c</span>(<span class="str">"low"</span>,<span class="str">"moderate"</span>,<span class="str">"high"</span>)))
+<span class="fn">feature_spec</span>(<span class="str">"exam_score"</span>,      <span class="str">"continuous"</span>,  <span class="fn">list</span>(<span class="arg">min</span><span class="op">=</span><span class="num">0</span>,  <span class="arg">max</span><span class="op">=</span><span class="num">100</span>))
+<span class="fn">feature_spec</span>(<span class="str">"outcome"</span>,         <span class="str">"categorical"</span>, <span class="fn">list</span>(<span class="arg">levels</span><span class="op">=</span><span class="fn">c</span>(<span class="str">"fail"</span>,<span class="str">"pass"</span>,<span class="str">"distinction"</span>)))
+</code></pre>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     3. DECLARE THE DAG
+═══════════════════════════════════════════════════════ -->
+<section id="s3">
+  <div class="step-label">Step 3</div>
+  <h2>Declare the DAG</h2>
+  <p>The DAG is the causal skeleton, declared with <code>add_dependency(parents, child, mechanism)</code>.</p>
+  <ul>
+    <li><strong>Root nodes</strong> (no parents) use <code>character(0)</code> as the parent list.</li>
+    <li><strong>Every feature</strong> must appear exactly once as the <code>child</code> argument.</li>
+  </ul>
+<pre><code><span class="cmt"># parents                        child               mechanism</span>
+<span class="fn">add_dependency</span>(<span class="fn">character</span>(<span class="num">0</span>),                <span class="str">"study_hours"</span>,    …)
+<span class="fn">add_dependency</span>(<span class="fn">character</span>(<span class="num">0</span>),                <span class="str">"prior_knowledge"</span>,…)
+<span class="fn">add_dependency</span>(<span class="str">"study_hours"</span>,              <span class="str">"fatigue"</span>,        …)
+<span class="fn">add_dependency</span>(<span class="fn">c</span>(<span class="str">"study_hours"</span>,
+               <span class="str">"prior_knowledge"</span>,
+               <span class="str">"fatigue"</span>),               <span class="str">"exam_score"</span>,     …)
+<span class="fn">add_dependency</span>(<span class="str">"exam_score"</span>,              <span class="str">"outcome"</span>,        …)
+</code></pre>
+  <div class="callout info">
+    <div class="label">Acyclicity</div>
+    lepidoptera validates the DAG on <code>finalize_system()</code> with Kahn's algorithm. A cycle produces a descriptive error before any simulation runs.
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     4. ROOT MECHANISMS
+═══════════════════════════════════════════════════════ -->
+<section id="s4">
+  <div class="step-label">Step 4</div>
+  <h2>Mechanisms for root nodes</h2>
+  <p>A <strong>mechanism</strong> is the generating function for a feature. Root nodes have no parents, so their mechanisms are marginal distributions — call a factory with <code>mechanism_library_get("name")(…params…)</code>.</p>
+
+  <table>
+    <tr><th>Factory</th><th>Use for</th><th>Key params</th></tr>
+    <tr><td>normal</td><td>Continuous, bell-shaped root</td><td>mean, sd</td></tr>
+    <tr><td>categorical_marginal</td><td>Categorical root node</td><td>levels, probs</td></tr>
+    <tr><td>ordinal_marginal</td><td>Ordinal root node</td><td>levels, probs</td></tr>
+    <tr><td>linear_gaussian</td><td>Continuous child, linear parents</td><td>coefs, intercept, sd</td></tr>
+    <tr><td>group_effect</td><td>Continuous child, one categorical parent</td><td>named list(mean, sd)</td></tr>
+    <tr><td>ordered_logit</td><td>Ordinal child</td><td>levels, coefs, cutpoints</td></tr>
+    <tr><td>multinomial_logit</td><td>Categorical child</td><td>levels, coefs</td></tr>
+  </table>
+
+<pre><code><span class="cmt"># study_hours: average ~7 h, sd = 3 h</span>
+<span class="var">mech_study_hours</span> <span class="op">&lt;-</span> <span class="fn">mechanism_library_get</span>(<span class="str">"normal"</span>)(<span class="arg">mean</span><span class="op">=</span><span class="num">7</span>, <span class="arg">sd</span><span class="op">=</span><span class="num">3</span>)
+
+<span class="cmt"># prior_knowledge: 30 % low, 50 % medium, 20 % high</span>
+<span class="var">mech_prior</span> <span class="op">&lt;-</span> <span class="fn">mechanism_library_get</span>(<span class="str">"ordinal_marginal"</span>)(
+  <span class="arg">levels</span> <span class="op">=</span> <span class="fn">c</span>(<span class="str">"low"</span>, <span class="str">"medium"</span>, <span class="str">"high"</span>),
+  <span class="arg">probs</span>  <span class="op">=</span> <span class="fn">c</span>(<span class="num">0.3</span>, <span class="num">0.5</span>, <span class="num">0.2</span>)
+)
+</code></pre>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     5. BUILT-IN DEPENDENT MECHANISM
+═══════════════════════════════════════════════════════ -->
+<section id="s5">
+  <div class="step-label">Step 5</div>
+  <h2>Mechanisms for dependent nodes (built-in)</h2>
+  <p><code>fatigue</code> is ordinal with one continuous parent. <code>ordered_logit</code> fits: more study hours → higher probability of high fatigue.</p>
+<pre><code><span class="var">mech_fatigue</span> <span class="op">&lt;-</span> <span class="fn">mechanism_library_get</span>(<span class="str">"ordered_logit"</span>)(
+  <span class="arg">levels</span>    <span class="op">=</span> <span class="fn">c</span>(<span class="str">"low"</span>, <span class="str">"moderate"</span>, <span class="str">"high"</span>),
+  <span class="arg">coefs</span>     <span class="op">=</span> <span class="fn">list</span>(<span class="arg">study_hours</span> <span class="op">=</span> <span class="num">0.30</span>),
+  <span class="arg">cutpoints</span> <span class="op">=</span> <span class="fn">c</span>(<span class="num">1.5</span>, <span class="num">3.2</span>)
+)
+</code></pre>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     6. CUSTOM MECHANISM
+═══════════════════════════════════════════════════════ -->
+<section id="s6">
+  <div class="step-label">Step 6</div>
+  <h2>Write a custom mechanism</h2>
+  <p>When no built-in factory covers your parent-type combination, write an R function and register it. The function receives a named list <code>pv</code> (parent values) and returns one generated value.</p>
+
+  <!-- Mechanism anatomy -->
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 560 190" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:560px;display:block;margin:0 auto">
+      <defs>
+        <marker id="a6" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0,8 3,0 6" fill="#b8a888"/>
+        </marker>
+      </defs>
+
+      <!-- parent boxes -->
+      <rect x="8" y="18" width="160" height="30" rx="7" fill="#d6edea" stroke="#5aaeaa" stroke-width="1.3"/>
+      <text x="88" y="36" text-anchor="middle" fill="#2a6e6a" font-family="ui-monospace,monospace" font-size="10.5">pv$study_hours</text>
+      <text x="88" y="47" text-anchor="middle" fill="#5aaeaa" font-family="system-ui" font-size="8.5" opacity=".7">continuous</text>
+
+      <rect x="8" y="73" width="160" height="30" rx="7" fill="#f5ecd2" stroke="#9e8230" stroke-width="1.3"/>
+      <text x="88" y="91" text-anchor="middle" fill="#6a5410" font-family="ui-monospace,monospace" font-size="10.5">pv$prior_knowledge</text>
+      <text x="88" y="102" text-anchor="middle" fill="#9e8230" font-family="system-ui" font-size="8.5" opacity=".7">ordinal</text>
+
+      <rect x="8" y="128" width="160" height="30" rx="7" fill="#f5ecd2" stroke="#9e8230" stroke-width="1.3"/>
+      <text x="88" y="146" text-anchor="middle" fill="#6a5410" font-family="ui-monospace,monospace" font-size="10.5">pv$fatigue</text>
+      <text x="88" y="157" text-anchor="middle" fill="#9e8230" font-family="system-ui" font-size="8.5" opacity=".7">ordinal</text>
+
+      <!-- arrows parents → fn -->
+      <path d="M 168 33 C 195 33 210 65 210 78" stroke="#b8a888" stroke-width="1.4" fill="none" marker-end="url(#a6)"/>
+      <path d="M 168 88 L 208 88" stroke="#b8a888" stroke-width="1.4" fill="none" marker-end="url(#a6)"/>
+      <path d="M 168 143 C 195 143 210 113 210 100" stroke="#b8a888" stroke-width="1.4" fill="none" marker-end="url(#a6)"/>
+
+      <!-- function box -->
+      <rect x="210" y="58" width="150" height="62" rx="10" fill="#e8f4f2" stroke="#5aaeaa" stroke-width="1.8"/>
+      <text x="285" y="80" text-anchor="middle" fill="#38827e" font-family="ui-monospace,monospace" font-size="13" font-weight="600">score_fn</text>
+      <text x="285" y="98" text-anchor="middle" fill="#5aaeaa" font-family="ui-monospace,monospace" font-size="11" opacity=".75">(pv)  →  value</text>
+      <text x="285" y="113" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="9">your R function</text>
+
+      <!-- register label -->
+      <rect x="196" y="8" width="178" height="20" rx="5" fill="#f5ecd2" stroke="#d8c898"/>
+      <text x="285" y="21" text-anchor="middle" fill="#6a5410" font-family="ui-monospace,monospace" font-size="9">register_mechanism(name, fn, …)</text>
+
+      <!-- arrow fn → output -->
+      <path d="M 360 89 L 400 89" stroke="#b8a888" stroke-width="1.4" fill="none" marker-end="url(#a6)"/>
+
+      <!-- output box -->
+      <rect x="400" y="68" width="148" height="42" rx="10" fill="#d6edea" stroke="#5aaeaa" stroke-width="1.5"/>
+      <text x="474" y="86" text-anchor="middle" fill="#2a6e6a" font-family="ui-monospace,monospace" font-size="12" font-weight="600">exam_score</text>
+      <text x="474" y="101" text-anchor="middle" fill="#5aaeaa" font-family="system-ui" font-size="9.5" opacity=".7">continuous · one value</text>
+
+      <!-- labels -->
+      <text x="88"  y="180" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="10">parent values  (pv)</text>
+      <text x="285" y="138" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="10">your custom function</text>
+      <text x="474" y="126" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="10">output value</text>
+    </svg>
+    <div class="diagram-caption">Anatomy of a custom mechanism — <code>pv</code> holds all parent values by name</div>
+  </div>
+
+  <h3>exam_score ← study_hours + prior_knowledge + fatigue</h3>
+<pre><code><span class="var">score_fn</span> <span class="op">&lt;-</span> <span class="kw">function</span>(<span class="var">pv</span>) {
+  <span class="cmt"># baseline from study time</span>
+  <span class="var">mu</span> <span class="op">&lt;-</span> <span class="num">40</span> <span class="op">+</span> <span class="fn">as.numeric</span>(<span class="var">pv</span><span class="op">$</span><span class="var">study_hours</span>) <span class="op">*</span> <span class="num">4.5</span>
+  <span class="cmt"># ordinal → as.character() before switch()</span>
+  <span class="var">mu</span> <span class="op">&lt;-</span> <span class="var">mu</span> <span class="op">+</span> <span class="kw">switch</span>(<span class="fn">as.character</span>(<span class="var">pv</span><span class="op">$</span><span class="var">prior_knowledge</span>),
+    <span class="arg">low</span><span class="op">=</span><span class="op">-</span><span class="num">10</span>, <span class="arg">medium</span><span class="op">=</span><span class="num">0</span>, <span class="arg">high</span><span class="op">=</span><span class="op">+</span><span class="num">10</span>, <span class="num">0</span>)
+  <span class="var">mu</span> <span class="op">&lt;-</span> <span class="var">mu</span> <span class="op">+</span> <span class="kw">switch</span>(<span class="fn">as.character</span>(<span class="var">pv</span><span class="op">$</span><span class="var">fatigue</span>),
+    <span class="arg">low</span><span class="op">=</span><span class="num">0</span>, <span class="arg">moderate</span><span class="op">=</span><span class="op">-</span><span class="num">5</span>, <span class="arg">high</span><span class="op">=</span><span class="op">-</span><span class="num">15</span>, <span class="num">0</span>)
+  <span class="fn">pmin</span>(<span class="num">100</span>, <span class="fn">pmax</span>(<span class="num">0</span>, <span class="fn">rnorm</span>(<span class="num">1</span>, <span class="var">mu</span>, <span class="arg">sd</span><span class="op">=</span><span class="num">8</span>)))
+}
+<span class="var">mech_score</span> <span class="op">&lt;-</span> <span class="fn">register_mechanism</span>(
+  <span class="str">"score_from_study_knowledge_fatigue"</span>, <span class="var">score_fn</span>,
+  <span class="arg">parent_types</span><span class="op">=</span><span class="fn">c</span>(<span class="str">"continuous"</span>,<span class="str">"ordinal"</span>,<span class="str">"ordinal"</span>),
+  <span class="arg">output_type</span><span class="op">=</span><span class="str">"continuous"</span>
+)
+</code></pre>
+
+  <h3>outcome ← exam_score</h3>
+<pre><code><span class="var">outcome_fn</span> <span class="op">&lt;-</span> <span class="kw">function</span>(<span class="var">pv</span>) {
+  <span class="var">s</span> <span class="op">&lt;-</span> <span class="fn">as.numeric</span>(<span class="var">pv</span><span class="op">$</span><span class="var">exam_score</span>)
+  <span class="kw">if</span>      (<span class="var">s</span> <span class="op">&gt;=</span> <span class="num">75</span>) <span class="str">"distinction"</span>
+  <span class="kw">else if</span> (<span class="var">s</span> <span class="op">&gt;=</span> <span class="num">50</span>) <span class="str">"pass"</span>
+  <span class="kw">else</span>              <span class="str">"fail"</span>
+}
+<span class="var">mech_outcome</span> <span class="op">&lt;-</span> <span class="fn">register_mechanism</span>(
+  <span class="str">"outcome_from_score"</span>, <span class="var">outcome_fn</span>,
+  <span class="arg">parent_types</span><span class="op">=</span><span class="str">"continuous"</span>, <span class="arg">output_type</span><span class="op">=</span><span class="str">"categorical"</span>
+)
+</code></pre>
+
+  <div class="callout tip">
+    <div class="label">The pv contract</div>
+    <code>pv</code> is a named list. Ordinal values arrive as factors — cast with <code>as.character()</code> before <code>switch()</code>. Continuous values arrive as numeric — cast with <code>as.numeric()</code> for safety.
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     7. ASSEMBLE & FINALIZE
+═══════════════════════════════════════════════════════ -->
+<section id="s7">
+  <div class="step-label">Step 7</div>
+  <h2>Assemble &amp; finalize</h2>
+  <p>Chain everything with R's pipe operator. <code>finalize_system()</code> validates the DAG, checks type consistency, and computes the topological order.</p>
+
+  <!-- Pipeline diagram -->
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 530 148" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:530px;display:block;margin:0 auto">
+      <defs>
+        <marker id="a7" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
+          <polygon points="0 0,7 2.5,0 5" fill="#b8a888"/>
+        </marker>
+      </defs>
+
+      <text x="8" y="11" fill="#a8997e" font-family="system-ui" font-size="8.5" font-weight="700" letter-spacing="1.8">DEFINE</text>
+      <text x="8" y="98" fill="#a8997e" font-family="system-ui" font-size="8.5" font-weight="700" letter-spacing="1.8">RUN</text>
+
+      <!-- Row 1 -->
+      <rect x="8" y="16" width="100" height="34" rx="7" fill="#ede8d8" stroke="#c8bda4" stroke-width="1.3"/>
+      <text x="58" y="31" text-anchor="middle" fill="#38827e" font-family="ui-monospace,monospace" font-size="10">new_system()</text>
+      <text x="58" y="44" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="8.5">initialise</text>
+
+      <path d="M 108 33 L 122 33" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#a7)"/>
+
+      <rect x="124" y="16" width="108" height="34" rx="7" fill="#ede8d8" stroke="#c8bda4" stroke-width="1.3"/>
+      <text x="178" y="31" text-anchor="middle" fill="#38827e" font-family="ui-monospace,monospace" font-size="10">add_feature()</text>
+      <text x="178" y="44" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="8.5">× 5 features</text>
+
+      <path d="M 232 33 L 246 33" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#a7)"/>
+
+      <rect x="248" y="16" width="120" height="34" rx="7" fill="#ede8d8" stroke="#c8bda4" stroke-width="1.3"/>
+      <text x="308" y="31" text-anchor="middle" fill="#38827e" font-family="ui-monospace,monospace" font-size="10">add_dependency()</text>
+      <text x="308" y="44" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="8.5">× 5 edges</text>
+
+      <path d="M 368 33 L 382 33" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#a7)"/>
+
+      <!-- finalize_system — mint accent -->
+      <rect x="384" y="16" width="132" height="34" rx="7" fill="#d6edea" stroke="#5aaeaa" stroke-width="1.7"/>
+      <text x="450" y="31" text-anchor="middle" fill="#2a6e6a" font-family="ui-monospace,monospace" font-size="10" font-weight="600">finalize_system()</text>
+      <text x="450" y="44" text-anchor="middle" fill="#5aaeaa" font-family="system-ui" font-size="8.5">validate + topo-sort</text>
+
+      <!-- connector down-left to row 2 -->
+      <path d="M 450 50 L 450 65 L 60 65 L 60 103" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#a7)"/>
+
+      <!-- Row 2 -->
+      <rect x="8" y="105" width="102" height="34" rx="7" fill="#d6edea" stroke="#5aaeaa" stroke-width="1.4"/>
+      <text x="59" y="120" text-anchor="middle" fill="#2a6e6a" font-family="ui-monospace,monospace" font-size="10">simulate()</text>
+      <text x="59" y="133" text-anchor="middle" fill="#5aaeaa" font-family="system-ui" font-size="8.5">baseline data</text>
+
+      <path d="M 110 122 L 126 122" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#a7)"/>
+
+      <rect x="128" y="105" width="110" height="34" rx="7" fill="#d6edea" stroke="#5aaeaa" stroke-width="1.4"/>
+      <text x="183" y="120" text-anchor="middle" fill="#2a6e6a" font-family="ui-monospace,monospace" font-size="10">propagate()</text>
+      <text x="183" y="133" text-anchor="middle" fill="#5aaeaa" font-family="system-ui" font-size="8.5">run intervention</text>
+
+      <path d="M 238 122 L 254 122" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#a7)"/>
+
+      <rect x="256" y="105" width="95" height="34" rx="7" fill="#d6edea" stroke="#5aaeaa" stroke-width="1.4"/>
+      <text x="303" y="120" text-anchor="middle" fill="#2a6e6a" font-family="ui-monospace,monospace" font-size="10">compare()</text>
+      <text x="303" y="133" text-anchor="middle" fill="#5aaeaa" font-family="system-ui" font-size="8.5">effect summary</text>
+    </svg>
+    <div class="diagram-caption">Full lepidoptera workflow — define once, run many times</div>
+  </div>
+
+<pre><code><span class="var">exam_sys</span> <span class="op">&lt;-</span> <span class="fn">new_system</span>() <span class="op">|&gt;</span>
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"study_hours"</span>,    <span class="str">"continuous"</span>, <span class="fn">list</span>(<span class="arg">min</span><span class="op">=</span><span class="num">0</span>,<span class="arg">max</span><span class="op">=</span><span class="num">20</span>))) <span class="op">|&gt;</span>
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"prior_knowledge"</span>,<span class="str">"ordinal"</span>,<span class="fn">list</span>(<span class="arg">levels</span><span class="op">=</span><span class="fn">c</span>(<span class="str">"low"</span>,<span class="str">"medium"</span>,<span class="str">"high"</span>)))) <span class="op">|&gt;</span>
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"fatigue"</span>,        <span class="str">"ordinal"</span>,<span class="fn">list</span>(<span class="arg">levels</span><span class="op">=</span><span class="fn">c</span>(<span class="str">"low"</span>,<span class="str">"moderate"</span>,<span class="str">"high"</span>)))) <span class="op">|&gt;</span>
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"exam_score"</span>,     <span class="str">"continuous"</span>,<span class="fn">list</span>(<span class="arg">min</span><span class="op">=</span><span class="num">0</span>,<span class="arg">max</span><span class="op">=</span><span class="num">100</span>))) <span class="op">|&gt;</span>
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"outcome"</span>,        <span class="str">"categorical"</span>,<span class="fn">list</span>(<span class="arg">levels</span><span class="op">=</span><span class="fn">c</span>(<span class="str">"fail"</span>,<span class="str">"pass"</span>,<span class="str">"distinction"</span>)))) <span class="op">|&gt;</span>
+  <span class="fn">add_dependency</span>(<span class="fn">character</span>(<span class="num">0</span>),                                  <span class="str">"study_hours"</span>,    <span class="var">mech_study_hours</span>) <span class="op">|&gt;</span>
+  <span class="fn">add_dependency</span>(<span class="fn">character</span>(<span class="num">0</span>),                                  <span class="str">"prior_knowledge"</span>,<span class="var">mech_prior</span>) <span class="op">|&gt;</span>
+  <span class="fn">add_dependency</span>(<span class="str">"study_hours"</span>,                                 <span class="str">"fatigue"</span>,        <span class="var">mech_fatigue</span>) <span class="op">|&gt;</span>
+  <span class="fn">add_dependency</span>(<span class="fn">c</span>(<span class="str">"study_hours"</span>,<span class="str">"prior_knowledge"</span>,<span class="str">"fatigue"</span>), <span class="str">"exam_score"</span>,     <span class="var">mech_score</span>) <span class="op">|&gt;</span>
+  <span class="fn">add_dependency</span>(<span class="str">"exam_score"</span>,                                  <span class="str">"outcome"</span>,        <span class="var">mech_outcome</span>) <span class="op">|&gt;</span>
+  <span class="fn">finalize_system</span>()
+</code></pre>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     8. SIMULATE
+═══════════════════════════════════════════════════════ -->
+<section id="s8">
+  <div class="step-label">Step 8</div>
+  <h2>Simulate a population</h2>
+  <p><code>simulate(system, n, seed)</code> samples <code>n</code> units in topological order and returns a plain data frame.</p>
+<pre><code><span class="var">df</span> <span class="op">&lt;-</span> <span class="fn">simulate</span>(<span class="var">exam_sys</span>, <span class="arg">n</span><span class="op">=</span><span class="num">1000</span>, <span class="arg">seed</span><span class="op">=</span><span class="num">42</span>)
+<span class="fn">head</span>(<span class="var">df</span>)
+</code></pre>
+<div class="output">  study_hours prior_knowledge  fatigue exam_score      outcome
+1        9.23           high      low      83.1  distinction
+2        4.57         medium moderate      51.8         pass
+3        2.11            low     high      28.4         fail
+4       10.85           high      low      92.3  distinction
+5        6.32         medium      low      67.1         pass
+6        3.44            low moderate      37.9         fail</div>
+  <div class="callout info">
+    <div class="label">Reproducibility</div>
+    The same <code>seed</code> always produces the same population. Per-unit seeds are assigned internally, so adding units doesn't reshuffle existing ones.
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     9. EXPLORE
+═══════════════════════════════════════════════════════ -->
+<section id="s9">
+  <div class="step-label">Step 9</div>
+  <h2>Explore the data</h2>
+  <p>The output is a plain data frame — use any R function you already know.</p>
+<pre><code><span class="fn">prop.table</span>(<span class="fn">table</span>(<span class="var">df</span><span class="op">$</span><span class="var">outcome</span>))
+<span class="fn">tapply</span>(<span class="var">df</span><span class="op">$</span><span class="var">exam_score</span>, <span class="var">df</span><span class="op">$</span><span class="var">prior_knowledge</span>, <span class="var">mean</span>)
+<span class="fn">table</span>(<span class="fn">cut</span>(<span class="var">df</span><span class="op">$</span><span class="var">study_hours</span>, <span class="arg">breaks</span><span class="op">=</span><span class="fn">c</span>(<span class="num">0</span>,<span class="num">5</span>,<span class="num">10</span>,<span class="num">20</span>)), <span class="var">df</span><span class="op">$</span><span class="var">fatigue</span>)
+<span class="fn">plot_dag</span>(<span class="var">exam_sys</span>)
+</code></pre>
+<div class="output">outcome
+      fail       pass distinction
+     0.287      0.489       0.224</div>
+  <div class="callout tip">
+    <div class="label">Sanity check</div>
+    Before running interventions, verify the baseline distribution looks reasonable. Extreme rates (0% or 100%) usually indicate miscalibrated mechanisms.
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     10. INTERVENTION
+═══════════════════════════════════════════════════════ -->
+<section id="s10">
+  <div class="step-label">Step 10</div>
+  <h2>Apply an intervention</h2>
+  <p>An <strong>intervention</strong> surgically alters one or more nodes and propagates the change automatically through all downstream variables. Everything upstream stays exactly as it was.</p>
+
+  <table>
+    <tr><th>mode</th><th>What it does</th><th>Use when</th></tr>
+    <tr><td>partial</td><td>Reuses the same baseline draws for unaffected nodes</td><td>Counterfactual ("same students, more study time")</td></tr>
+    <tr><td>full</td><td>Resamples the entire intervened system independently</td><td>Population comparison (different cohorts)</td></tr>
+  </table>
+
+  <!-- Propagation before/after -->
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 570 255" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:570px;display:block;margin:0 auto">
+      <defs>
+        <marker id="a10a" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
+          <polygon points="0 0,7 2.5,0 5" fill="#b8a888"/>
+        </marker>
+        <marker id="a10b" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
+          <polygon points="0 0,7 2.5,0 5" fill="#c07858"/>
+        </marker>
+      </defs>
+
+      <!-- LEFT: Baseline -->
+      <text x="118" y="14" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="10" font-weight="700" letter-spacing="1">BASELINE</text>
+
+      <path d="M 60 52 C 60 80 50 87 50 103" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#a10a)"/>
+      <path d="M 103 52 C 140 52 148 82 152 103" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#a10a)"/>
+      <path d="M 195 43 C 195 80 175 90 170 103" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#a10a)"/>
+      <path d="M 95 120 L 112 120" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#a10a)"/>
+      <path d="M 157 135 L 142 168" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#a10a)"/>
+
+      <rect x="18" y="28" width="108" height="28" rx="7" fill="#d6edea" stroke="#5aaeaa" stroke-width="1.3"/>
+      <text x="72" y="43" text-anchor="middle" fill="#2a6e6a" font-family="ui-monospace,monospace" font-size="10">study_hours</text>
+      <text x="72" y="54" text-anchor="middle" fill="#5aaeaa" font-family="system-ui" font-size="7.5" opacity=".7">continuous</text>
+
+      <rect x="138" y="22" width="115" height="28" rx="7" fill="#f5ecd2" stroke="#9e8230" stroke-width="1.3"/>
+      <text x="195" y="37" text-anchor="middle" fill="#6a5410" font-family="ui-monospace,monospace" font-size="10">prior_knowledge</text>
+      <text x="195" y="48" text-anchor="middle" fill="#9e8230" font-family="system-ui" font-size="7.5" opacity=".7">ordinal</text>
+
+      <rect x="18" y="103" width="77" height="28" rx="7" fill="#f5ecd2" stroke="#9e8230" stroke-width="1.3"/>
+      <text x="56" y="118" text-anchor="middle" fill="#6a5410" font-family="ui-monospace,monospace" font-size="10">fatigue</text>
+
+      <rect x="108" y="103" width="96" height="28" rx="7" fill="#d6edea" stroke="#5aaeaa" stroke-width="1.3"/>
+      <text x="156" y="118" text-anchor="middle" fill="#2a6e6a" font-family="ui-monospace,monospace" font-size="10">exam_score</text>
+
+      <rect x="80" y="168" width="110" height="28" rx="7" fill="#eddaf8" stroke="#8058a0" stroke-width="1.3"/>
+      <text x="135" y="183" text-anchor="middle" fill="#52307a" font-family="ui-monospace,monospace" font-size="10">outcome</text>
+
+      <!-- MIDDLE -->
+      <line x1="258" y1="18" x2="258" y2="212" stroke="#c8bda4" stroke-width="1" stroke-dasharray="4 4"/>
+      <text x="285" y="63" text-anchor="middle" fill="#8b6340" font-family="ui-monospace,monospace" font-size="9.5" font-weight="700">do_fix(</text>
+      <text x="285" y="78" text-anchor="middle" fill="#8b6340" font-family="ui-monospace,monospace" font-size="9">"study_hours", 12)</text>
+      <path d="M 260 96 L 312 96" stroke="#c07858" stroke-width="1.4" fill="none" marker-end="url(#a10b)"/>
+
+      <!-- legend -->
+      <rect x="240" y="158" width="10" height="10" rx="2" fill="#fde8dc" stroke="#c07858" stroke-width="1.3"/>
+      <text x="256" y="168" fill="#8b6340" font-family="system-ui" font-size="8.5">fixed by do_fix</text>
+      <rect x="240" y="174" width="10" height="10" rx="2" fill="#fdf5d8" stroke="#b8a030" stroke-width="1.3"/>
+      <text x="256" y="184" fill="#8a7028" font-family="system-ui" font-size="8.5">downstream (changed)</text>
+      <rect x="240" y="190" width="10" height="10" rx="2" fill="#f5ecd2" stroke="#9e8230" stroke-width="1.3" opacity=".5"/>
+      <text x="256" y="200" fill="#a8997e" font-family="system-ui" font-size="8.5">unchanged</text>
+
+      <!-- RIGHT: Intervened -->
+      <text x="450" y="14" text-anchor="middle" fill="#8a7868" font-family="system-ui" font-size="10" font-weight="700" letter-spacing="1">INTERVENED</text>
+
+      <path d="M 388 52 C 388 80 378 87 378 103" stroke="#c07858" stroke-width="1.3" fill="none" marker-end="url(#a10b)"/>
+      <path d="M 431 52 C 468 52 476 82 480 103" stroke="#c07858" stroke-width="1.3" fill="none" marker-end="url(#a10b)"/>
+      <path d="M 523 43 C 523 80 503 90 498 103" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#a10a)"/>
+      <path d="M 423 120 L 440 120" stroke="#c07858" stroke-width="1.3" fill="none" marker-end="url(#a10b)"/>
+      <path d="M 485 135 L 470 168" stroke="#c07858" stroke-width="1.3" fill="none" marker-end="url(#a10b)"/>
+
+      <!-- study_hours: fixed -->
+      <rect x="346" y="28" width="108" height="28" rx="7" fill="#fde8dc" stroke="#c07858" stroke-width="1.8"/>
+      <text x="400" y="43" text-anchor="middle" fill="#8b3820" font-family="ui-monospace,monospace" font-size="10" font-weight="600">study_hours</text>
+      <text x="400" y="54" text-anchor="middle" fill="#c07858" font-family="system-ui" font-size="8" opacity=".85">fixed = 12</text>
+
+      <!-- prior_knowledge: unchanged (dimmed) -->
+      <rect x="466" y="22" width="115" height="28" rx="7" fill="#f5ecd2" stroke="#9e8230" stroke-width="1.3" opacity=".4"/>
+      <text x="523" y="37" text-anchor="middle" fill="#9e8230" font-family="ui-monospace,monospace" font-size="10" opacity=".4">prior_knowledge</text>
+
+      <!-- fatigue: downstream -->
+      <rect x="346" y="103" width="77" height="28" rx="7" fill="#fdf5d8" stroke="#b8a030" stroke-width="1.5"/>
+      <text x="384" y="118" text-anchor="middle" fill="#6a5018" font-family="ui-monospace,monospace" font-size="10">fatigue</text>
+
+      <!-- exam_score: downstream -->
+      <rect x="436" y="103" width="96" height="28" rx="7" fill="#fdf5d8" stroke="#b8a030" stroke-width="1.5"/>
+      <text x="484" y="118" text-anchor="middle" fill="#6a5018" font-family="ui-monospace,monospace" font-size="10">exam_score</text>
+
+      <!-- outcome: downstream -->
+      <rect x="408" y="168" width="110" height="28" rx="7" fill="#fdf5d8" stroke="#b8a030" stroke-width="1.5"/>
+      <text x="463" y="183" text-anchor="middle" fill="#6a5018" font-family="ui-monospace,monospace" font-size="10">outcome</text>
+    </svg>
+    <div class="diagram-caption"><code>do_fix("study_hours", 12)</code> fixes the target and recomputes all downstream variables — <code>prior_knowledge</code> is upstream and stays untouched</div>
+  </div>
+
+<pre><code><span class="var">r</span> <span class="op">&lt;-</span> <span class="fn">propagate</span>(<span class="var">exam_sys</span>,
+  <span class="arg">interventions</span> <span class="op">=</span> <span class="fn">list</span>(<span class="fn">do_fix</span>(<span class="str">"study_hours"</span>, <span class="num">12</span>)),
+  <span class="arg">n</span>    <span class="op">=</span> <span class="num">1000</span>,
+  <span class="arg">seed</span> <span class="op">=</span> <span class="num">42</span>,
+  <span class="arg">mode</span> <span class="op">=</span> <span class="str">"partial"</span>
+)
+<span class="cmt"># r$baseline          → original population</span>
+<span class="cmt"># r$intervened        → same students under intervention</span>
+<span class="cmt"># r$affected_features → c("fatigue","exam_score","outcome")</span>
+</code></pre>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     11. COMPARE
+═══════════════════════════════════════════════════════ -->
+<section id="s11">
+  <div class="step-label">Step 11</div>
+  <h2>Compare baseline vs. intervened</h2>
+  <p><code>compare(r)</code> returns a named list — access any variable by name.</p>
+<pre><code><span class="var">delta</span> <span class="op">&lt;-</span> <span class="fn">compare</span>(<span class="var">r</span>)
+
+<span class="fn">print</span>(<span class="var">delta</span>[[<span class="str">"exam_score"</span>]])  <span class="cmt"># continuous: mean shift</span>
+<span class="fn">print</span>(<span class="var">delta</span>[[<span class="str">"outcome"</span>]])    <span class="cmt"># categorical: freq shift</span>
+
+<span class="cmt"># Or compute directly:</span>
+<span class="fn">prop.table</span>(<span class="fn">table</span>(<span class="var">r</span><span class="op">$</span><span class="var">baseline</span><span class="op">$</span><span class="var">outcome</span>))
+<span class="fn">prop.table</span>(<span class="fn">table</span>(<span class="var">r</span><span class="op">$</span><span class="var">intervened</span><span class="op">$</span><span class="var">outcome</span>))
+</code></pre>
+<div class="output">$exam_score$baseline_mean   → 66.4
+$exam_score$intervened_mean → 84.1
+$exam_score$mean_diff       → +17.7
+
+           fail    pass   distinction
+baseline   28.7%  48.9%     22.4%
+intervened  4.1%  31.3%     64.6%</div>
+
+  <div class="callout result">
+    <div class="label">Interpretation</div>
+    Fixing study hours to 12 raises the mean score by 17.7 points and triples the distinction rate (22% → 65%). The effect flows through <code>fatigue</code> too — more study → more fatigue → partial score penalty, which <code>mode="partial"</code> captures correctly.
+  </div>
+</section>
+
+
+<!-- ── Mid-tutorial specimen strip ──────────────────── -->
+<div class="moth-parade moth-parade--sm" aria-hidden="true">
+  <svg viewBox="0 0 340 96" xmlns="http://www.w3.org/2000/svg"
+       style="width:100%;max-width:330px;display:block;margin:0 auto;opacity:.6">
+
+    <!-- Tiger Moth (gold) @ cx=56 -->
+    <path d="M56,42 C49,28 22,22 17,32 C13,44 27,56 50,54" fill="#e8c870" stroke="#9e8230" stroke-width="1"/>
+    <path d="M56,42 C63,28 90,22 95,32 C99,44 85,56 62,54" fill="#e8c870" stroke="#9e8230" stroke-width="1"/>
+    <path d="M26,28 C23,34 20,42 22,50" stroke="#8b6340" stroke-width="1.2" fill="none" stroke-linecap="round" opacity=".6"/>
+    <path d="M36,23 C32,31 30,40 32,50" stroke="#8b6340" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".55"/>
+    <path d="M86,28 C89,34 92,42 90,50" stroke="#8b6340" stroke-width="1.2" fill="none" stroke-linecap="round" opacity=".6"/>
+    <path d="M76,23 C80,31 82,40 80,50" stroke="#8b6340" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".55"/>
+    <path d="M50,54 C36,60 20,68 18,74 C16,78 30,76 44,66" fill="#c89838" stroke="#9e8230" stroke-width="1"/>
+    <path d="M62,54 C76,60 92,68 94,74 C96,78 82,76 68,66" fill="#c89838" stroke="#9e8230" stroke-width="1"/>
+    <circle cx="24" cy="67" r="2.8" fill="#f2e4b0" opacity=".75"/>
+    <circle cx="88" cy="67" r="2.8" fill="#f2e4b0" opacity=".75"/>
+    <ellipse cx="56" cy="52" rx="3.5" ry="17" fill="#8b6340"/>
+    <ellipse cx="56" cy="36" rx="3.5" ry="4"  fill="#a07848"/>
+    <path d="M53,34 C48,24 43,16 38,10" stroke="#6a4020" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="38" cy="10" r="1.8" fill="#6a4020"/>
+    <path d="M59,34 C64,24 69,16 74,10" stroke="#6a4020" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="74" cy="10" r="1.8" fill="#6a4020"/>
+
+    <!-- Luna Swallowtail (mint) @ cx=170 -->
+    <path d="M170,36 C158,20 126,12 122,24 C118,38 134,56 162,52" fill="#a8dcd8" stroke="#5aaeaa" stroke-width="1.3"/>
+    <path d="M170,36 C182,20 214,12 218,24 C222,38 206,56 178,52" fill="#a8dcd8" stroke="#5aaeaa" stroke-width="1.3"/>
+    <ellipse cx="138" cy="30" rx="6.5" ry="4.5" fill="#f2e4b0" opacity=".85" transform="rotate(-12 138 30)"/>
+    <ellipse cx="202" cy="30" rx="6.5" ry="4.5" fill="#f2e4b0" opacity=".85" transform="rotate(12 202 30)"/>
+    <path d="M170,36 C155,42 132,48 120,52" stroke="#5aaeaa" stroke-width=".5" fill="none" opacity=".35"/>
+    <path d="M170,36 C185,42 208,48 220,52" stroke="#5aaeaa" stroke-width=".5" fill="none" opacity=".35"/>
+    <path d="M162,52 C142,62 120,70 116,78 C114,84 130,82 148,72" fill="#8dd4ce" stroke="#5aaeaa" stroke-width="1.3"/>
+    <path d="M178,52 C198,62 220,70 224,78 C226,84 210,82 192,72" fill="#8dd4ce" stroke="#5aaeaa" stroke-width="1.3"/>
+    <ellipse cx="124" cy="64" rx="3.5" ry="2.5" fill="#f2e4b0" opacity=".7" transform="rotate(-8 124 64)"/>
+    <ellipse cx="216" cy="64" rx="3.5" ry="2.5" fill="#f2e4b0" opacity=".7" transform="rotate(8 216 64)"/>
+    <path d="M148,72 C142,78 134,86 128,91" stroke="#5aaeaa" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M148,72 C142,78 134,86 128,91" stroke="#8dd4ce"  stroke-width="2"   fill="none" stroke-linecap="round"/>
+    <path d="M192,72 C198,78 206,86 212,91" stroke="#5aaeaa" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M192,72 C198,78 206,86 212,91" stroke="#8dd4ce"  stroke-width="2"   fill="none" stroke-linecap="round"/>
+    <ellipse cx="170" cy="47" rx="4" ry="20" fill="#8b6340"/>
+    <line x1="170" y1="33" x2="170" y2="62" stroke="#a07848" stroke-width=".7" opacity=".4"/>
+    <ellipse cx="170" cy="28" rx="3.5" ry="3" fill="#a07848"/>
+    <path d="M167,26 C162,16 156,8 150,3"  stroke="#7a5030" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <circle cx="150" cy="3" r="2" fill="#7a5030"/>
+    <path d="M173,26 C178,16 184,8 190,3"  stroke="#7a5030" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <circle cx="190" cy="3" r="2" fill="#7a5030"/>
+
+    <!-- Purple Morpho @ cx=284 -->
+    <path d="M284,42 C274,26 246,18 241,30 C237,42 252,58 276,56" fill="#c8a8e0" stroke="#8058a0" stroke-width="1"/>
+    <path d="M284,42 C294,26 322,18 327,30 C331,42 316,58 292,56" fill="#c8a8e0" stroke="#8058a0" stroke-width="1"/>
+    <path d="M243,32 C252,42 263,50 274,56" stroke="#e8d4f4" stroke-width="9" fill="none" opacity=".3" stroke-linecap="round"/>
+    <path d="M325,32 C316,42 305,50 294,56" stroke="#e8d4f4" stroke-width="9" fill="none" opacity=".3" stroke-linecap="round"/>
+    <circle cx="243" cy="37" r="2.8" fill="#f2e4b0" opacity=".7"/>
+    <circle cx="244" cy="47" r="2.2" fill="#f2e4b0" opacity=".65"/>
+    <circle cx="325" cy="37" r="2.8" fill="#f2e4b0" opacity=".7"/>
+    <circle cx="324" cy="47" r="2.2" fill="#f2e4b0" opacity=".65"/>
+    <path d="M276,56 C258,64 238,72 236,80 C234,84 252,82 268,70" fill="#b898d0" stroke="#8058a0" stroke-width="1"/>
+    <path d="M292,56 C310,64 330,72 332,80 C334,84 316,82 300,70" fill="#b898d0" stroke="#8058a0" stroke-width="1"/>
+    <circle cx="240" cy="74" r="2.2" fill="#f2e4b0" opacity=".68"/>
+    <circle cx="328" cy="74" r="2.2" fill="#f2e4b0" opacity=".68"/>
+    <ellipse cx="284" cy="54" rx="3.5" ry="16" fill="#52307a"/>
+    <ellipse cx="284" cy="40" rx="3"   ry="3.5" fill="#6a40a0"/>
+    <path d="M281,38 C276,28 270,18 264,12" stroke="#52307a" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="264" cy="12" r="1.8" fill="#52307a"/>
+    <path d="M287,38 C292,28 298,18 304,12" stroke="#52307a" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="304" cy="12" r="1.8" fill="#52307a"/>
+  </svg>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     12. MORE INTERVENTIONS
+═══════════════════════════════════════════════════════ -->
+<section id="s12">
+  <div class="step-label">Step 12</div>
+  <h2>More interventions at a glance</h2>
+
+  <h3>shift() — relative change</h3>
+  <p>Adds a delta to the value the mechanism would naturally produce. The causal structure <em>above</em> the node is preserved.</p>
+<pre><code><span class="cmt"># "What if every student studied 3 h more than normal?"</span>
+<span class="fn">propagate</span>(<span class="var">exam_sys</span>,
+  <span class="arg">interventions</span><span class="op">=</span><span class="fn">list</span>(<span class="fn">shift</span>(<span class="str">"study_hours"</span>, <span class="kw">function</span>(<span class="var">x</span>) <span class="var">x</span> <span class="op">+</span> <span class="num">3</span>)),
+  <span class="arg">n</span><span class="op">=</span><span class="num">1000</span>, <span class="arg">seed</span><span class="op">=</span><span class="num">42</span>, <span class="arg">mode</span><span class="op">=</span><span class="str">"partial"</span>)
+</code></pre>
+
+  <h3>mechanism_override() — replace the generating rule</h3>
+  <p>Swaps out an entire mechanism for a node. The parent set is preserved; only the function changes.</p>
+<pre><code><span class="cmt"># "What if prior_knowledge had zero effect on exam_score?"</span>
+<span class="var">no_prior_fn</span> <span class="op">&lt;-</span> <span class="kw">function</span>(<span class="var">pv</span>)
+  <span class="fn">pmin</span>(<span class="num">100</span>, <span class="fn">pmax</span>(<span class="num">0</span>, <span class="num">40</span> <span class="op">+</span> <span class="fn">as.numeric</span>(<span class="var">pv</span><span class="op">$</span><span class="var">study_hours</span>)<span class="op">*</span><span class="num">4.5</span> <span class="op">+</span> <span class="fn">rnorm</span>(<span class="num">1</span>,<span class="num">0</span>,<span class="num">8</span>)))
+
+<span class="fn">propagate</span>(<span class="var">exam_sys</span>,
+  <span class="arg">interventions</span><span class="op">=</span><span class="fn">list</span>(<span class="fn">mechanism_override</span>(<span class="str">"exam_score"</span>,
+    <span class="fn">register_mechanism</span>(<span class="str">"no_prior"</span>, <span class="var">no_prior_fn</span>,
+      <span class="fn">c</span>(<span class="str">"continuous"</span>,<span class="str">"ordinal"</span>,<span class="str">"ordinal"</span>), <span class="str">"continuous"</span>))),
+  <span class="arg">n</span><span class="op">=</span><span class="num">1000</span>, <span class="arg">seed</span><span class="op">=</span><span class="num">42</span>, <span class="arg">mode</span><span class="op">=</span><span class="str">"full"</span>)
+</code></pre>
+
+  <h3>Multiple interventions at once</h3>
+<pre><code><span class="cmt"># "Best-case: 12 h study AND high prior knowledge"</span>
+<span class="fn">propagate</span>(<span class="var">exam_sys</span>,
+  <span class="arg">interventions</span><span class="op">=</span><span class="fn">list</span>(
+    <span class="fn">do_fix</span>(<span class="str">"study_hours"</span>,    <span class="num">12</span>),
+    <span class="fn">do_fix</span>(<span class="str">"prior_knowledge"</span>, <span class="str">"high"</span>)
+  ),
+  <span class="arg">n</span><span class="op">=</span><span class="num">1000</span>, <span class="arg">seed</span><span class="op">=</span><span class="num">42</span>, <span class="arg">mode</span><span class="op">=</span><span class="str">"partial"</span>)
+</code></pre>
+
+  <hr>
+  <h3>Run the tutorial script</h3>
+<pre><code><span class="fn">setwd</span>(<span class="str">"~/lepidoptera/lepidoptera/examples/tutorial"</span>)
+<span class="fn">devtools</span><span class="op">::</span><span class="fn">load_all</span>(<span class="str">"../../r-pkg"</span>)
+<span class="fn">source</span>(<span class="str">"tutorial.R"</span>)
+</code></pre>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     13. COUNTERFACTUAL
+═══════════════════════════════════════════════════════ -->
+<section id="s13">
+  <div class="step-label">Step 13</div>
+  <h2>Counterfactual reasoning — the individual "what if?"</h2>
+
+  <p>An <strong>intervention</strong> asks: <em>"If we gave everyone 10 study hours, how would the population change?"</em> — a new group of students, subject to the new rule.</p>
+
+  <p>A <strong>counterfactual</strong> asks: <em>"What would THIS specific failing student have scored, if they had studied 10 hours instead of their actual 4?"</em> — the same individual, a different past.</p>
+
+  <p>The key difference is <code>mode = "partial"</code>. It freezes every unaffected attribute — prior knowledge, the random noise in fatigue, the noise in the exam score — and replays only what downstream of the intervention changes. Each student's "luck" stays fixed. Only the intervention variable and its consequences are rewritten.</p>
+
+  <!-- Bifurcation diagram -->
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 560 290" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:560px;display:block;margin:0 auto">
+      <defs>
+        <marker id="acf" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
+          <polygon points="0 0,7 2.5,0 5" fill="#b8a888"/>
+        </marker>
+        <marker id="acfg" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
+          <polygon points="0 0,7 2.5,0 5" fill="#5e8a68"/>
+        </marker>
+      </defs>
+
+      <!-- ── shared student box ── -->
+      <rect x="140" y="10" width="280" height="46" rx="10"
+            fill="#ece6d6" stroke="#c8bda4" stroke-width="1.3"/>
+      <text x="280" y="29" text-anchor="middle"
+            fill="#2e2018" font-family="system-ui" font-size="11" font-weight="700">Student #42</text>
+      <text x="280" y="47" text-anchor="middle"
+            fill="#8a7868" font-family="ui-monospace,monospace" font-size="10">prior_knowledge = low  ·  unchanged in both worlds</text>
+
+      <!-- fork paths -->
+      <path d="M 240 56 Q 180 82 148 106"
+            stroke="#c8bda4" stroke-width="1.3" fill="none"/>
+      <path d="M 320 56 Q 380 82 412 106"
+            stroke="#c8bda4" stroke-width="1.3" fill="none"/>
+      <text x="148" y="98" text-anchor="middle"
+            fill="#9a6840" font-family="system-ui" font-size="9" font-weight="700" letter-spacing="1">REALITY</text>
+      <text x="412" y="98" text-anchor="middle"
+            fill="#38827e" font-family="system-ui" font-size="9" font-weight="700" letter-spacing="1">COUNTERFACTUAL</text>
+
+      <!-- ── LEFT: reality column ── -->
+      <!-- study_hours: low, terracotta tint -->
+      <rect x="52" y="106" width="192" height="32" rx="7"
+            fill="#fde8dc" stroke="#c07858" stroke-width="1.3"/>
+      <text x="148" y="120" text-anchor="middle" fill="#8b3820"
+            font-family="ui-monospace,monospace" font-size="10" font-weight="600">study_hours</text>
+      <text x="148" y="132" text-anchor="middle" fill="#c07858"
+            font-family="ui-monospace,monospace" font-size="10">4.2 h</text>
+
+      <path d="M 148 138 L 148 153" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#acf)"/>
+
+      <!-- fatigue: high -->
+      <rect x="52" y="154" width="192" height="32" rx="7"
+            fill="#fde8dc" stroke="#c07858" stroke-width="1.3"/>
+      <text x="148" y="168" text-anchor="middle" fill="#8b3820"
+            font-family="ui-monospace,monospace" font-size="10" font-weight="600">fatigue</text>
+      <text x="148" y="180" text-anchor="middle" fill="#c07858"
+            font-family="ui-monospace,monospace" font-size="10">high</text>
+
+      <path d="M 148 186 L 148 201" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#acf)"/>
+
+      <!-- exam_score -->
+      <rect x="52" y="202" width="192" height="32" rx="7"
+            fill="#fde8dc" stroke="#c07858" stroke-width="1.3"/>
+      <text x="148" y="216" text-anchor="middle" fill="#8b3820"
+            font-family="ui-monospace,monospace" font-size="10" font-weight="600">exam_score</text>
+      <text x="148" y="228" text-anchor="middle" fill="#c07858"
+            font-family="ui-monospace,monospace" font-size="10">38.4</text>
+
+      <path d="M 148 234 L 148 249" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#acf)"/>
+
+      <!-- outcome: FAIL -->
+      <rect x="46" y="250" width="204" height="36" rx="9"
+            fill="#c07858" stroke="#8b3820" stroke-width="1.5"/>
+      <text x="148" y="271" text-anchor="middle" fill="#fff"
+            font-family="system-ui" font-size="14" font-weight="700" letter-spacing=".5">FAIL  ✗</text>
+
+      <!-- ── RIGHT: counterfactual column ── -->
+      <!-- study_hours: 10h, mint -->
+      <rect x="316" y="106" width="192" height="32" rx="7"
+            fill="#d6edea" stroke="#5aaeaa" stroke-width="1.3"/>
+      <text x="412" y="120" text-anchor="middle" fill="#2a6e6a"
+            font-family="ui-monospace,monospace" font-size="10" font-weight="600">study_hours</text>
+      <text x="412" y="132" text-anchor="middle" fill="#38827e"
+            font-family="ui-monospace,monospace" font-size="10">10 h  ← fixed by do_fix</text>
+
+      <path d="M 412 138 L 412 153" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#acf)"/>
+
+      <!-- fatigue: moderate (gold) -->
+      <rect x="316" y="154" width="192" height="32" rx="7"
+            fill="#f5ecd2" stroke="#9e8230" stroke-width="1.3"/>
+      <text x="412" y="168" text-anchor="middle" fill="#6a5410"
+            font-family="ui-monospace,monospace" font-size="10" font-weight="600">fatigue</text>
+      <text x="412" y="180" text-anchor="middle" fill="#9e8230"
+            font-family="ui-monospace,monospace" font-size="10">moderate  ← recomputed</text>
+
+      <path d="M 412 186 L 412 201" stroke="#b8a888" stroke-width="1.2" fill="none" marker-end="url(#acf)"/>
+
+      <!-- exam_score -->
+      <rect x="316" y="202" width="192" height="32" rx="7"
+            fill="#d6edea" stroke="#5aaeaa" stroke-width="1.3"/>
+      <text x="412" y="216" text-anchor="middle" fill="#2a6e6a"
+            font-family="ui-monospace,monospace" font-size="10" font-weight="600">exam_score</text>
+      <text x="412" y="228" text-anchor="middle" fill="#38827e"
+            font-family="ui-monospace,monospace" font-size="10">67.1  ← recomputed</text>
+
+      <path d="M 412 234 L 412 249" stroke="#5e8a68" stroke-width="1.2" fill="none" marker-end="url(#acfg)"/>
+
+      <!-- outcome: PASS -->
+      <rect x="310" y="250" width="204" height="36" rx="9"
+            fill="#5e8a68" stroke="#3a6048" stroke-width="1.5"/>
+      <text x="412" y="271" text-anchor="middle" fill="#fff"
+            font-family="system-ui" font-size="14" font-weight="700" letter-spacing=".5">PASS  ✓</text>
+
+      <!-- vertical separator -->
+      <line x1="280" y1="60" x2="280" y2="282"
+            stroke="#c8bda4" stroke-width="1" stroke-dasharray="5 4"/>
+
+      <!-- "same luck" annotation -->
+      <text x="280" y="165" text-anchor="middle" fill="#a8997e"
+            font-family="system-ui" font-size="8.5" font-style="italic">same random</text>
+      <text x="280" y="177" text-anchor="middle" fill="#a8997e"
+            font-family="system-ui" font-size="8.5" font-style="italic">noise preserved</text>
+    </svg>
+    <div class="diagram-caption">Same student — two worlds. The prior knowledge and individual noise stay identical; only <code>study_hours</code> and its downstream consequences change.</div>
+  </div>
+
+  <h3>Code</h3>
+<pre><code><span class="cmt"># Step 1: baseline simulation (already done in Step 8)</span>
+<span class="cmt">#   df <- simulate(exam_sys, n = 1000, seed = 42)</span>
+
+<span class="cmt"># Step 2: counterfactual — same individuals, study_hours fixed to 10</span>
+<span class="var">r_cf</span> <span class="op">&lt;-</span> <span class="fn">propagate</span>(<span class="var">exam_sys</span>,
+  <span class="arg">interventions</span> <span class="op">=</span> <span class="fn">list</span>(<span class="fn">do_fix</span>(<span class="str">"study_hours"</span>, <span class="num">10</span>)),
+  <span class="arg">n</span>    <span class="op">=</span> <span class="num">1000</span>,
+  <span class="arg">seed</span> <span class="op">=</span> <span class="num">42</span>,
+  <span class="arg">mode</span> <span class="op">=</span> <span class="str">"partial"</span>  <span class="cmt"># ← this is what makes it counterfactual</span>
+)
+
+<span class="cmt"># Step 3: among students who actually FAILED, what would have happened?</span>
+<span class="var">actually_failed</span> <span class="op">&lt;-</span> <span class="var">r_cf</span><span class="op">$</span><span class="var">baseline</span><span class="op">$</span><span class="var">outcome</span> <span class="op">==</span> <span class="str">"fail"</span>
+<span class="var">cf_outcomes</span>     <span class="op">&lt;-</span> <span class="var">r_cf</span><span class="op">$</span><span class="var">intervened</span><span class="op">$</span><span class="var">outcome</span>[<span class="var">actually_failed</span>]
+
+<span class="fn">cat</span>(<span class="fn">sprintf</span>(<span class="str">"Among %d students who actually failed:\n"</span>,
+            <span class="fn">sum</span>(<span class="var">actually_failed</span>)))
+<span class="fn">cat</span>(<span class="fn">sprintf</span>(<span class="str">"  would still fail:       %d (%.0f%%)\n"</span>,
+    <span class="fn">sum</span>(<span class="var">cf_outcomes</span> <span class="op">==</span> <span class="str">"fail"</span>),        <span class="fn">mean</span>(<span class="var">cf_outcomes</span> <span class="op">==</span> <span class="str">"fail"</span>)        <span class="op">*</span> <span class="num">100</span>))
+<span class="fn">cat</span>(<span class="fn">sprintf</span>(<span class="str">"  would pass:             %d (%.0f%%)\n"</span>,
+    <span class="fn">sum</span>(<span class="var">cf_outcomes</span> <span class="op">==</span> <span class="str">"pass"</span>),        <span class="fn">mean</span>(<span class="var">cf_outcomes</span> <span class="op">==</span> <span class="str">"pass"</span>)        <span class="op">*</span> <span class="num">100</span>))
+<span class="fn">cat</span>(<span class="fn">sprintf</span>(<span class="str">"  would get distinction:  %d (%.0f%%)\n"</span>,
+    <span class="fn">sum</span>(<span class="var">cf_outcomes</span> <span class="op">==</span> <span class="str">"distinction"</span>), <span class="fn">mean</span>(<span class="var">cf_outcomes</span> <span class="op">==</span> <span class="str">"distinction"</span>) <span class="op">*</span> <span class="num">100</span>))
+
+<span class="cmt"># Step 4: zoom in on one specific student</span>
+<span class="var">i</span> <span class="op">&lt;-</span> <span class="fn">which</span>(<span class="var">actually_failed</span>)[<span class="num">1</span>]   <span class="cmt"># first student who failed</span>
+
+<span class="fn">cat</span>(<span class="fn">sprintf</span>(<span class="str">"\nStudent #%d — what actually happened:\n"</span>, <span class="var">i</span>))
+<span class="fn">print</span>(<span class="var">r_cf</span><span class="op">$</span><span class="var">baseline</span>[<span class="var">i</span>, ])
+
+<span class="fn">cat</span>(<span class="fn">sprintf</span>(<span class="str">"Student #%d — counterfactual (study = 10 h):\n"</span>, <span class="var">i</span>))
+<span class="fn">print</span>(<span class="var">r_cf</span><span class="op">$</span><span class="var">intervened</span>[<span class="var">i</span>, ])
+</code></pre>
+
+<div class="output">Among 287 students who actually failed:
+  would still fail:        48  (17%)
+  would pass:             186  (65%)
+  would get distinction:   53  (18%)
+
+Student #3 — what actually happened:
+  study_hours prior_knowledge fatigue exam_score outcome
+3        2.11             low    high       28.4    fail
+
+Student #3 — counterfactual (study = 10 h):
+  study_hours prior_knowledge fatigue exam_score outcome
+3        10.0             low    high       61.8    pass</div>
+
+  <div class="callout result">
+    <div class="label">What this tells us</div>
+    Student #3 had low prior knowledge and suffered high fatigue even with 10 hours — yet the score jumped from 28 to 62 and they would have passed. Their prior knowledge stayed low, their luck with fatigue stayed bad, but the extra study time was enough. 83% of failing students would have changed outcome — and the 17% who would still fail are those for whom structural disadvantage (very low prior knowledge + high fatigue) overwhelms the study effort.
+  </div>
+
+  <h3>Counterfactual vs. population intervention — the critical distinction</h3>
+  <table>
+    <tr><th></th><th>Population intervention (mode="full")</th><th>Counterfactual (mode="partial")</th></tr>
+    <tr>
+      <td>Question</td>
+      <td>If we ran the trial again with study=10, what would a new sample look like?</td>
+      <td>What would THESE same students have scored with study=10?</td>
+    </tr>
+    <tr>
+      <td>Prior knowledge</td>
+      <td>Resampled from scratch</td>
+      <td>Exactly as observed</td>
+    </tr>
+    <tr>
+      <td>Noise terms</td>
+      <td>New independent draws</td>
+      <td>Same individual randomness, replayed</td>
+    </tr>
+    <tr>
+      <td>Use case</td>
+      <td>Policy design, RCT planning</td>
+      <td>Individual explanation, fairness analysis</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<section id="s14">
+  <div class="step-label">Step 14</div>
+  <h2>Copula mechanism — dependence structure from data</h2>
+
+  <p>So far every mechanism was hand-specified: you chose the distribution family and its parameters yourself.
+  <strong>copula_mechanism()</strong> takes a different path — give it a data frame and it learns the
+  full joint dependence structure for you, then uses it to generate the child variable conditional on any
+  combination of parent values.</p>
+
+  <p>Under the hood, <code>lepidoptera</code> fits a <strong>pair-copula construction</strong> (D-vine)
+  via <code>rvinecopulib</code>. Variables are ordered
+  <code>c(parents…, child)</code> so that the Rosenblatt transform gives
+  <code>v[last] = F(u_child | u_parents)</code> — a quantity that can be
+  inverted exactly to sample one fresh child value per unit.</p>
+
+  <!-- Family table -->
+  <div class="callout" style="margin:1.6rem 0">
+    <strong>Families available</strong> — pass any of these as <code>family =</code>:
+    <table style="margin-top:.8rem;font-size:.82rem;width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="border-bottom:1px solid var(--stone)">
+          <th style="text-align:left;padding:.3rem .6rem">family =</th>
+          <th style="text-align:left;padding:.3rem .6rem">what it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:.28rem .6rem"><code>"gaussian"</code></td><td style="padding:.28rem .6rem">Gaussian copula, base R only — no extra packages needed</td></tr>
+        <tr><td style="padding:.28rem .6rem"><code>"auto"</code></td><td style="padding:.28rem .6rem">Best family per pair, chosen by AIC (rvinecopulib); falls back to Gaussian if not installed</td></tr>
+        <tr><td style="padding:.28rem .6rem"><code>"t"</code></td><td style="padding:.28rem .6rem">Student-t — heavier joint tails than Gaussian</td></tr>
+        <tr><td style="padding:.28rem .6rem"><code>"clayton"</code></td><td style="padding:.28rem .6rem">Strong lower-tail dependence (co-movement in bad times)</td></tr>
+        <tr><td style="padding:.28rem .6rem"><code>"gumbel"</code></td><td style="padding:.28rem .6rem">Strong upper-tail dependence (co-movement in good times)</td></tr>
+        <tr><td style="padding:.28rem .6rem"><code>"frank"</code></td><td style="padding:.28rem .6rem">Symmetric tails, no tail dependence</td></tr>
+        <tr><td style="padding:.28rem .6rem"><code>"joe"</code>, <code>"bb1"</code>…<code>"bb8"</code></td><td style="padding:.28rem .6rem">Parametric Archimedean families and two-parameter extensions</td></tr>
+        <tr><td style="padding:.28rem .6rem"><code>"tll"</code></td><td style="padding:.28rem .6rem">Non-parametric kernel (transformation local likelihood)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Code block -->
+<pre><code><span class="cmt"># Suppose we observed exam scores alongside hours slept the night before.</span>
+<span class="cmt"># We want the simulation to honour the correlation structure in the data.</span>
+
+<span class="cmt">## Step 1 — gather observed data (here we manufacture some)</span>
+<span class="kw">set.seed</span>(<span class="num">1</span>)
+n_obs   &lt;- <span class="num">400</span>
+obs_data &lt;- <span class="fn">data.frame</span>(
+  study_hours = <span class="fn">rnorm</span>(n_obs, <span class="num">6</span>, <span class="num">2</span>),
+  sleep_hours = <span class="fn">rnorm</span>(n_obs, <span class="num">7</span>, <span class="num">1.2</span>)
+)
+<span class="cmt"># make them correlated (students who study more tend to sleep less)</span>
+obs_data$sleep_hours &lt;- obs_data$sleep_hours - <span class="num">0.4</span> * obs_data$study_hours + <span class="fn">rnorm</span>(n_obs, <span class="num">0</span>, <span class="num">.8</span>)
+
+<span class="cmt">## Step 2 — fit a copula mechanism for sleep_hours | study_hours</span>
+<span class="kw">library</span>(lepidoptera)
+
+mech_sleep &lt;- <span class="fn">copula_mechanism</span>(
+  <span class="arg">variables</span> = <span class="fn">c</span>(<span class="str">"sleep_hours"</span>, <span class="str">"study_hours"</span>),  <span class="cmt"># child first, parents after</span>
+  <span class="arg">family</span>   = <span class="str">"auto"</span>,                             <span class="cmt"># best-fit family per pair</span>
+  <span class="arg">fit_data</span> = obs_data
+)
+
+<span class="cmt">## Step 3 — plug it into any system like any other mechanism</span>
+mech_study &lt;- <span class="fn">mechanism_library_get</span>(<span class="str">"normal"</span>)(<span class="arg">mean</span> = <span class="num">6</span>, <span class="arg">sd</span> = <span class="num">2</span>)
+
+sys_cop &lt;- <span class="fn">new_system</span>() |&gt;
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"study_hours"</span>, <span class="str">"continuous"</span>, <span class="fn">list</span>(<span class="arg">min</span>=<span class="num">0</span>, <span class="arg">max</span>=<span class="num">24</span>))) |&gt;
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"sleep_hours"</span>,  <span class="str">"continuous"</span>, <span class="fn">list</span>(<span class="arg">min</span>=<span class="num">0</span>, <span class="arg">max</span>=<span class="num">24</span>))) |&gt;
+  <span class="fn">add_dependency</span>(<span class="fn">character</span>(<span class="num">0</span>),      <span class="str">"study_hours"</span>, mech_study) |&gt;
+  <span class="fn">add_dependency</span>(<span class="str">"study_hours"</span>,     <span class="str">"sleep_hours"</span>, mech_sleep) |&gt;
+  <span class="fn">finalize_system</span>()
+
+sim_cop &lt;- <span class="fn">simulate</span>(sys_cop, <span class="arg">n</span>=<span class="num">600</span>, <span class="arg">seed</span>=<span class="num">42</span>)
+
+<span class="fn">cor</span>(sim_cop$study_hours, sim_cop$sleep_hours, <span class="arg">method</span>=<span class="str">"spearman"</span>)
+<span class="cmt"># &gt; [1] -0.37   ← recovers the negative correlation from obs_data</span>
+
+<span class="cmt">## What families are available on your installation?</span>
+<span class="fn">list_copula_families</span>()</code></pre>
+
+  <div class="callout">
+    <strong>When to use a copula vs. a parametric mechanism.</strong>
+    Use <code>copula_mechanism()</code> when you have real data and want the simulation to
+    honour its <em>dependence structure</em> — shape of tails, asymmetry, multivariate co-movement —
+    without having to specify a functional form by hand.
+    Parametric mechanisms (<code>linear_gaussian</code>, <code>multinomial_logit</code>, …) are
+    better when you want to reason explicitly about the structural equation: slope, intercept,
+    noise scale.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<section id="s15">
+  <div class="step-label">Step 15</div>
+  <h2>model_mechanism — wrap any pre-fitted model</h2>
+
+  <p>You trained a random forest yesterday. A colleague fitted a logistic regression on clinical data.
+  <strong>model_mechanism()</strong> lets you drop any pre-existing model object directly into a
+  <code>lepidoptera</code> system as a generative mechanism — no re-training, no adapter code.</p>
+
+  <p>The contract is a single function <code>predict_fn(parent_values)</code> that receives a named
+  list of parent values and returns one simulated value. You write the translation layer
+  (reformatting inputs, picking the right output slot, adding residual noise if needed).
+  To the system, this node is completely ordinary.</p>
+
+  <!-- Side-by-side comparison -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin:1.6rem 0">
+    <div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem">learned_mechanism</div>
+      <p style="font-size:.86rem;line-height:1.55;color:var(--ink-mid)">Fits its own model internally from <code>fit_data</code>. Good when you want lepidoptera to learn the relationship automatically (OLS, k-NN). No external package needed.</p>
+    </div>
+    <div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--mint-deep);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem">model_mechanism</div>
+      <p style="font-size:.86rem;line-height:1.55;color:var(--ink-mid)">Uses a model you already trained (ranger, xgboost, keras, glm, …). You control the prediction logic. Best for production-grade models or complex architectures.</p>
+    </div>
+  </div>
+
+<pre><code><span class="cmt">## Example 1 — lm as a generative mechanism (adds residual noise)</span>
+<span class="kw">set.seed</span>(<span class="num">7</span>)
+df_fit &lt;- <span class="fn">data.frame</span>(<span class="arg">age</span>=<span class="fn">rnorm</span>(<span class="num">200</span>,<span class="num">50</span>,<span class="num">10</span>), <span class="arg">sbp</span>=<span class="fn">rnorm</span>(<span class="num">200</span>,<span class="num">120</span>,<span class="num">15</span>))
+fit_lm &lt;- <span class="fn">lm</span>(sbp ~ age, <span class="arg">data</span>=df_fit)
+sigma  &lt;- <span class="fn">summary</span>(fit_lm)$sigma
+
+mech_sbp &lt;- <span class="fn">model_mechanism</span>(
+  <span class="arg">predict_fn</span> = <span class="kw">function</span>(pv) {
+    nd   &lt;- <span class="fn">data.frame</span>(<span class="arg">age</span>=<span class="fn">as.numeric</span>(pv$age))
+    pred &lt;- <span class="fn">predict</span>(fit_lm, nd)[[<span class="num">1L</span>]]
+    pred + <span class="fn">rnorm</span>(<span class="num">1</span>, <span class="num">0</span>, sigma)   <span class="cmt"># ← you add noise explicitly</span>
+  },
+  <span class="arg">parents</span>      = <span class="str">"age"</span>,
+  <span class="arg">parent_types</span> = <span class="str">"continuous"</span>,
+  <span class="arg">output_type</span>  = <span class="str">"continuous"</span>
+)
+
+<span class="cmt">## Example 2 — ranger random forest, categorical output</span>
+<span class="cmt"># rf &lt;- ranger::ranger(response ~ age + dose, data=trial, probability=TRUE)</span>
+<span class="cmt"># mech_resp &lt;- model_mechanism(</span>
+<span class="cmt">#   predict_fn = function(pv) {</span>
+<span class="cmt">#     nd   &lt;- data.frame(age=as.numeric(pv$age), dose=as.numeric(pv$dose))</span>
+<span class="cmt">#     pred &lt;- predict(rf, nd)$predictions          # matrix, 1 row</span>
+<span class="cmt">#     sample(colnames(pred), 1, prob=pred[1,])</span>
+<span class="cmt">#   },</span>
+<span class="cmt">#   parents      = c("age", "dose"),</span>
+<span class="cmt">#   parent_types = c("continuous", "continuous"),</span>
+<span class="cmt">#   output_type  = "categorical",</span>
+<span class="cmt">#   levels       = c("no_response", "response")</span>
+<span class="cmt"># )</span>
+
+<span class="cmt">## Plug mech_sbp into a system and simulate</span>
+mech_age &lt;- <span class="fn">mechanism_library_get</span>(<span class="str">"normal"</span>)(<span class="arg">mean</span>=<span class="num">50</span>, <span class="arg">sd</span>=<span class="num">10</span>)
+
+sys_mm &lt;- <span class="fn">new_system</span>() |&gt;
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"age"</span>, <span class="str">"continuous"</span>, <span class="fn">list</span>(<span class="arg">min</span>=<span class="num">0</span>,  <span class="arg">max</span>=<span class="num">120</span>))) |&gt;
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"sbp"</span>, <span class="str">"continuous"</span>, <span class="fn">list</span>(<span class="arg">min</span>=<span class="num">60</span>, <span class="arg">max</span>=<span class="num">260</span>))) |&gt;
+  <span class="fn">add_dependency</span>(<span class="fn">character</span>(<span class="num">0</span>), <span class="str">"age"</span>, mech_age) |&gt;
+  <span class="fn">add_dependency</span>(<span class="str">"age"</span>,        <span class="str">"sbp"</span>, mech_sbp) |&gt;
+  <span class="fn">finalize_system</span>()
+
+sim_mm &lt;- <span class="fn">simulate</span>(sys_mm, <span class="arg">n</span>=<span class="num">400</span>, <span class="arg">seed</span>=<span class="num">1</span>)
+<span class="fn">cor</span>(sim_mm$age, sim_mm$sbp, <span class="arg">method</span>=<span class="str">"spearman"</span>)
+<span class="cmt"># &gt; [1] 0.11   ← positive trend inherited from the lm</span></code></pre>
+
+  <div class="callout">
+    <strong>The predict_fn is the integration boundary.</strong>
+    Inside it you can call any R package — <code>ranger</code>, <code>xgboost</code>,
+    <code>keras</code>, <code>torch</code>, a REST API — as long as it takes parent values
+    and returns one value. lepidoptera never sees the model object; it only sees the function.
+    This means you can swap models without touching the system definition.
+  </div>
+</section>
+
+<footer>
+  <!-- small moth trio in footer -->
+  <div aria-hidden="true" style="margin-bottom:.8rem">
+    <svg viewBox="0 0 200 52" xmlns="http://www.w3.org/2000/svg"
+         style="width:180px;display:inline-block;opacity:.28">
+      <!-- tiny Peacock Eye @ cx=32 -->
+      <path d="M32,26 C27,18 10,14 7,20 C4,26 14,36 29,34" fill="#d4b4d8" stroke="#8058a0" stroke-width=".8"/>
+      <path d="M32,26 C37,18 54,14 57,20 C60,26 50,36 35,34" fill="#d4b4d8" stroke="#8058a0" stroke-width=".8"/>
+      <ellipse cx="14" cy="22" rx="5" ry="3.8" fill="#9e8230"/>
+      <ellipse cx="14" cy="22" rx="3" ry="2.3" fill="#8058a0"/>
+      <ellipse cx="14" cy="22" rx="1.5" ry="1.2" fill="#f2e4b0"/>
+      <ellipse cx="50" cy="22" rx="5" ry="3.8" fill="#9e8230"/>
+      <ellipse cx="50" cy="22" rx="3" ry="2.3" fill="#8058a0"/>
+      <ellipse cx="50" cy="22" rx="1.5" ry="1.2" fill="#f2e4b0"/>
+      <path d="M29,34 C20,38 10,44 9,48 C8,50 18,49 26,44" fill="#bfa0c4" stroke="#8058a0" stroke-width=".8"/>
+      <path d="M35,34 C44,38 54,44 55,48 C56,50 46,49 38,44" fill="#bfa0c4" stroke="#8058a0" stroke-width=".8"/>
+      <ellipse cx="32" cy="34" rx="2.5" ry="10" fill="#4a2870"/>
+      <path d="M30,24 C27,18 23,12 19,8"  stroke="#4a2870" stroke-width=".9" fill="none" stroke-linecap="round"/>
+      <circle cx="19" cy="8" r="1.4" fill="#4a2870"/>
+      <path d="M34,24 C37,18 41,12 45,8"  stroke="#4a2870" stroke-width=".9" fill="none" stroke-linecap="round"/>
+      <circle cx="45" cy="8" r="1.4" fill="#4a2870"/>
+      <!-- tiny Luna Moth @ cx=100 -->
+      <path d="M100,22 C92,12 72,6 68,14 C64,22 74,34 94,30" fill="#a8dcd8" stroke="#5aaeaa" stroke-width=".9"/>
+      <path d="M100,22 C108,12 128,6 132,14 C136,22 126,34 106,30" fill="#a8dcd8" stroke="#5aaeaa" stroke-width=".9"/>
+      <ellipse cx="77" cy="18" rx="4.5" ry="3.2" fill="#f2e4b0" opacity=".85" transform="rotate(-10 77 18)"/>
+      <ellipse cx="123" cy="18" rx="4.5" ry="3.2" fill="#f2e4b0" opacity=".85" transform="rotate(10 123 18)"/>
+      <path d="M94,30 C80,36 66,42 63,48 C62,51 72,50 82,44" fill="#8dd4ce" stroke="#5aaeaa" stroke-width=".9"/>
+      <path d="M106,30 C120,36 134,42 137,48 C138,51 128,50 118,44" fill="#8dd4ce" stroke="#5aaeaa" stroke-width=".9"/>
+      <path d="M82,44 C78,48 73,51 70,54" stroke="#5aaeaa" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M82,44 C78,48 73,51 70,54" stroke="#8dd4ce"  stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M118,44 C122,48 127,51 130,54" stroke="#5aaeaa" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M118,44 C122,48 127,51 130,54" stroke="#8dd4ce"  stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="100" cy="28" rx="3" ry="14" fill="#8b6340"/>
+      <ellipse cx="100" cy="17" rx="2.5" ry="2.2" fill="#a07848"/>
+      <path d="M98,16 C94,9 90,4 86,1"   stroke="#7a5030" stroke-width=".9" fill="none" stroke-linecap="round"/>
+      <circle cx="86" cy="1" r="1.4" fill="#7a5030"/>
+      <path d="M102,16 C106,9 110,4 114,1" stroke="#7a5030" stroke-width=".9" fill="none" stroke-linecap="round"/>
+      <circle cx="114" cy="1" r="1.4" fill="#7a5030"/>
+      <!-- tiny Ghost Moth @ cx=168 -->
+      <path d="M168,26 C162,16 140,12 137,20 C134,28 146,38 164,36" fill="#d8eddc" stroke="#5e8a68" stroke-width=".8"/>
+      <path d="M168,26 C174,16 196,12 199,20 C202,28 190,38 172,36" fill="#d8eddc" stroke="#5e8a68" stroke-width=".8"/>
+      <path d="M168,26 C156,22 140,20 137,21" stroke="#5e8a68" stroke-width=".5" fill="none" opacity=".3"/>
+      <path d="M168,26 C180,22 196,20 199,21" stroke="#5e8a68" stroke-width=".5" fill="none" opacity=".3"/>
+      <path d="M164,36 C152,42 140,48 138,52" fill="#c8e4cc" stroke="#5e8a68" stroke-width=".8"/>
+      <path d="M172,36 C184,42 196,48 198,52" fill="#c8e4cc" stroke="#5e8a68" stroke-width=".8"/>
+      <ellipse cx="168" cy="36" rx="2.5" ry="12" fill="#3a6048"/>
+      <ellipse cx="168" cy="24" rx="2.2" ry="2.5" fill="#4e7860"/>
+      <path d="M166,22 C162,14 158,8 153,4"  stroke="#2a4838" stroke-width=".9" fill="none" stroke-linecap="round"/>
+      <circle cx="153" cy="4" r="1.4" fill="#2a4838"/>
+      <path d="M170,22 C174,14 178,8 183,4"  stroke="#2a4838" stroke-width=".9" fill="none" stroke-linecap="round"/>
+      <circle cx="183" cy="4" r="1.4" fill="#2a4838"/>
+    </svg>
+  </div>
+  <br>
+  lepidoptera — generic causal simulation engine &nbsp;·&nbsp;
+  <a href="../../README.md" style="color:var(--mint-deep)">README</a> &nbsp;·&nbsp;
+  <a href="../../SPEC.md"   style="color:var(--mint-deep)">SPEC</a> &nbsp;·&nbsp;
+  <a href="../clinical-trials/rct_simulation.R" style="color:var(--mint-deep)">Clinical trials example</a> &nbsp;·&nbsp;
+  <a href="../pneumology-ward/hospital_emergency_sim.R" style="color:var(--mint-deep)">Pneumology ward example</a>
+</footer>
+
+</div>
+</body>
+</html>

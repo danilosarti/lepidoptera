@@ -1,0 +1,143 @@
+---
+title: "Getting Started with lepidoptera"
+author: "Danilo A. Sarti"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with lepidoptera}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+
+**lepidoptera** is a domain-agnostic causal simulation engine for structural
+causal models with mixed variable types.  The package separates the causal
+graph (which variables exist and who depends on whom) from the mechanism (how
+each variable is generated given its parents), enabling clean intervention
+semantics and individual-level counterfactual queries.
+
+The core workflow has four steps:
+
+1. Declare feature specifications (`feature_spec()`).
+2. Attach a mechanism to each node (`mechanism_library_get()` or a custom
+   factory).
+3. Assemble and finalise the system (`new_system()`, `add_feature()`,
+   `add_dependency()`, `finalize_system()`).
+4. Simulate (`simulate()`) and propagate interventions (`propagate()`).
+
+## A minimal example
+
+```{r minimal}
+library("lepidoptera")
+
+# 1. Feature specs
+age_spec  <- feature_spec("age",    "continuous",  list(min = 18, max = 100))
+cvd_spec  <- feature_spec("cvd",    "categorical", list(levels = c("no", "yes")))
+
+# 2. Mechanisms
+mech_age <- mechanism_library_get("normal")(mean = 55, sd = 12)
+mech_cvd <- mechanism_library_get("multinomial_logit")(
+  levels     = c("no", "yes"),
+  coefs      = list(yes = list(age = 0.04)),
+  intercepts = list(yes = -3.0)
+)
+
+# 3. System
+sys <- new_system()                                  |>
+  add_feature(age_spec)                              |>
+  add_feature(cvd_spec)                              |>
+  add_dependency(character(0), "age", mech_age)      |>
+  add_dependency("age",        "cvd", mech_cvd)      |>
+  finalize_system()
+
+# 4. Simulate
+pop <- simulate(sys, n = 1000, seed = 1)
+head(pop)
+prop.table(table(pop$cvd))
+```
+
+## Interventions and counterfactuals
+
+`propagate()` applies one or more interventions and returns both baseline and
+intervened populations.  With `mode = "full"` each unit is drawn independently
+from the interventional distribution (suitable for ATE estimation); with
+`mode = "partial"` unaffected nodes retain their baseline draws so the same
+individual appears in both worlds (suitable for ITE estimation).
+
+```{r propagate}
+# Population-level intervention: what if everyone were 70?
+result_full <- propagate(
+  sys,
+  interventions = list(do_fix("age", 70)),
+  n = 1000, seed = 1, mode = "full"
+)
+cat("Baseline CVD rate:     ", mean(result_full$baseline$cvd  == "yes"), "\n")
+cat("Under age=70 CVD rate: ", mean(result_full$intervened$cvd == "yes"), "\n")
+
+# Individual-level counterfactual: same 1000 people, age set to 70
+result_cf <- propagate(
+  sys,
+  interventions = list(do_fix("age", 70)),
+  n = 1000, seed = 1, mode = "partial"
+)
+ite <- (result_cf$intervened$cvd == "yes") - (result_cf$baseline$cvd == "yes")
+cat("Mean ITE: ", mean(ite), "\n")
+```
+
+## Vine copula mechanism
+
+When observed data are available, `copula_mechanism()` fits the full joint
+dependence structure non-parametrically and uses it as the conditional
+generating rule at simulation time.
+
+```{r copula, eval = requireNamespace("rvinecopulib", quietly = TRUE)}
+set.seed(42)
+obs <- data.frame(
+  sbp = rnorm(300, 130, 15),
+  dbp = NA_real_
+)
+obs$dbp <- 0.5 * obs$sbp + rnorm(300, 10, 8)
+
+sbp_spec <- feature_spec("sbp", "continuous", list(min = 70,  max = 250))
+dbp_spec <- feature_spec("dbp", "continuous", list(min = 40,  max = 150))
+
+mech_sbp <- mechanism_library_get("normal")(mean = 130, sd = 15)
+mech_dbp <- copula_mechanism(
+  variables = c("dbp", "sbp"),
+  family    = "auto",
+  fit_data  = obs
+)
+
+sys_bp <- new_system()                                        |>
+  add_feature(sbp_spec) |> add_feature(dbp_spec)             |>
+  add_dependency(character(0), "sbp", mech_sbp)              |>
+  add_dependency("sbp",        "dbp", mech_dbp)              |>
+  finalize_system()
+
+sim_bp <- simulate(sys_bp, n = 500, seed = 7)
+cat(sprintf(
+  "Observed Spearman rho: %.2f  |  Simulated: %.2f\n",
+  cor(obs$sbp, obs$dbp, method = "spearman"),
+  cor(sim_bp$sbp, sim_bp$dbp, method = "spearman")
+))
+```
+
+## Further reading
+
+The companion paper (Sarti, 2026, *Journal of Statistical Software*) provides
+a full technical description of the framework, the mechanism library, the
+partial propagation algorithm, and three worked illustrations spanning clinical
+trial simulation, emergency-ward digital twins, and epidemiological mediation
+analysis.
+
+```r
+citation("lepidoptera")
+```

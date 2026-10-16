@@ -1,0 +1,11 @@
+bibentry(
+  bibtype  = "Article",
+  title    = "{lepidoptera}: A Domain-Agnostic Engine for Causal Simulation
+              with Mixed Variable Types, Vine Copula Dependence,
+              and Individual-Level Counterfactual Propagation",
+  author   = person("Danilo A.", "Sarti"),
+  journal  = "Journal of Statistical Software",
+  year     = "2026",
+  note     = "Under review",
+  url      = "https://github.com/daniloasarti/lepidoptera"
+)

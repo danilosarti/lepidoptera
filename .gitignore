@@ -1,0 +1,50 @@
+# R
+.Rhistory
+.RData
+.Ruserdata
+r-pkg/*.Rcheck/
+r-pkg/man/*.Rd
+*.tar.gz
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+.mypy_cache/
+.ruff_cache/
+*.egg
+
+# LaTeX
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.synctex.gz
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.toc
+
+# R project user files
+r-pkg/.Rproj.user/
+
+# Intermediate paper drafts (keep only final versions)
+paper/lepidoptera_jss.tex
+paper/lepidoptera_jss.pdf
+paper/lepidoptera_jss2.tex
+paper/lepidoptera_jss2.pdf
+paper/lepidoptera_paper.tex
+paper/lepidoptera_preview.tex
+paper/lepidoptera_preview.pdf
+paper/lepidoptera.bib
+
+# Compiled PDFs (regenerated from source)
+paper/*.pdf
+
+# macOS
+.DS_Store
+**/.DS_Store
+r-pkg/.Rproj.user/

@@ -1,0 +1,654 @@
+%% lepidoptera_v2.bib — updated bibliography (October 2026)
+%% Includes: simDAG (JSS 2026), DagSim (PLoS ONE 2023), R6causal (2024),
+%%           Karvanen et al. (JAIR 2024), pyvinecopulib, and all prior entries.
+
+%% ── Core causal inference ─────────────────────────────────────────────────────
+
+@book{pearl2009causality,
+  title     = {Causality: {M}odels, {R}easoning, and {I}nference},
+  author    = {Pearl, Judea},
+  year      = {2009},
+  edition   = {2nd},
+  publisher = {Cambridge University Press},
+  address   = {Cambridge}
+}
+
+@book{peters2017elements,
+  title     = {Elements of {C}ausal {I}nference: {F}oundations and {L}earning {A}lgorithms},
+  author    = {Peters, Jonas and Janzing, Dominik and Sch{\"o}lkopf, Bernhard},
+  year      = {2017},
+  publisher = {MIT Press},
+  address   = {Cambridge, MA}
+}
+
+@book{hernan2020causal,
+  title     = {Causal {I}nference: {W}hat {I}f},
+  author    = {Hern{\'a}n, Miguel A. and Robins, James M.},
+  year      = {2020},
+  publisher = {Chapman \& Hall/CRC},
+  address   = {Boca Raton, FL}
+}
+
+@book{spirtes2000causation,
+  title     = {Causation, Prediction, and Search},
+  author    = {Spirtes, Peter and Glymour, Clark and Scheines, Richard},
+  year      = {2000},
+  edition   = {2nd},
+  publisher = {MIT Press},
+  address   = {Cambridge, MA}
+}
+
+@article{pearl1995causal,
+  title   = {Causal diagrams for empirical research},
+  author  = {Pearl, Judea},
+  journal = {Biometrika},
+  volume  = {82},
+  number  = {4},
+  pages   = {669--688},
+  year    = {1995}
+}
+
+@article{pearl2001direct,
+  title   = {Direct and indirect effects},
+  author  = {Pearl, Judea},
+  journal = {Proceedings of the Seventeenth Conference on Uncertainty in Artificial Intelligence},
+  pages   = {411--420},
+  year    = {2001}
+}
+
+@article{rubin1974estimating,
+  title   = {Estimating causal effects of treatments in randomized and nonrandomized studies},
+  author  = {Rubin, Donald B.},
+  journal = {Journal of Educational Psychology},
+  volume  = {66},
+  number  = {5},
+  pages   = {688--701},
+  year    = {1974}
+}
+
+@article{rubin1980randomization,
+  title   = {Randomization analysis of experimental data: {T}he {F}isher randomization test comment},
+  author  = {Rubin, Donald B.},
+  journal = {Journal of the American Statistical Association},
+  volume  = {75},
+  number  = {371},
+  pages   = {591--593},
+  year    = {1980}
+}
+
+@article{robins1992identifiability,
+  title   = {Identifiability and exchangeability for direct and indirect effects},
+  author  = {Robins, James M. and Greenland, Sander},
+  journal = {Epidemiology},
+  volume  = {3},
+  number  = {2},
+  pages   = {143--155},
+  year    = {1992}
+}
+
+@article{robins2000marginal,
+  title   = {Marginal structural models and causal inference in epidemiology},
+  author  = {Robins, James M. and Hernan, Miguel A. and Brumback, Babette},
+  journal = {Epidemiology},
+  volume  = {11},
+  number  = {5},
+  pages   = {550--560},
+  year    = {2000}
+}
+
+@article{shpitser2007id,
+  title   = {Identification of joint interventional distributions in recursive semi-{M}arkovian causal models},
+  author  = {Shpitser, Ilya and Pearl, Judea},
+  journal = {Proceedings of the National Conference on Artificial Intelligence (AAAI)},
+  volume  = {21},
+  pages   = {1219--1226},
+  year    = {2006}
+}
+
+@article{bongers2021foundations,
+  title   = {Foundations of structural causal models with cycles and latent variables},
+  author  = {Bongers, Stephan and Forr{\'e}, Patrick and Peters, Jonas and Mooij, Joris M.},
+  journal = {Annals of Statistics},
+  volume  = {49},
+  number  = {5},
+  pages   = {2885--2915},
+  year    = {2021}
+}
+
+%% ── Causal simulation software ────────────────────────────────────────────────
+
+@article{sofrygin2017simcausal,
+  title   = {\pkg{simcausal} {R} package: {C}onducting transparent and reproducible simulation studies of causal effect estimation with complex longitudinal data},
+  author  = {Sofrygin, Oleg and van der Laan, Mark J. and Neugebauer, Romain},
+  journal = {Journal of Statistical Software},
+  volume  = {81},
+  number  = {2},
+  pages   = {1--47},
+  year    = {2017},
+  doi     = {10.18637/jss.v081.i02}
+}
+
+@article{goldfeld2020simstudy,
+  title   = {\pkg{simstudy}: {I}lluminating research methods through data generation},
+  author  = {Goldfeld, Keith S. and Wujciak-Jens, Jacob},
+  journal = {Journal of Open Source Software},
+  volume  = {5},
+  number  = {54},
+  pages   = {2763},
+  year    = {2020},
+  doi     = {10.21105/joss.02763}
+}
+
+@article{denz2026simdag,
+  title   = {Simulating Data from Directed Acyclic Graphs Using the \pkg{simDAG} Package for \proglang{R}},
+  author  = {Denz, Robin and Timmesfeld, Nina},
+  journal = {Journal of Statistical Software},
+  volume  = {116},
+  number  = {2},
+  pages   = {1--38},
+  year    = {2026},
+  doi     = {10.18637/jss.v116.i02}
+}
+
+@article{alhajj2023dagsim,
+  title   = {\pkg{DagSim}: {C}oncept and {P}ython package for {DAG}-based data simulation with mixed variable types and complex functional relationships},
+  author  = {Al Hajj, Ghadi S. and Gul, Muhammad Umer and Bongo, Lasse Labrijn and Lindstrøm, Jonas Christoffer and Harber-Aschan, Lisa},
+  journal = {PLOS ONE},
+  volume  = {18},
+  number  = {5},
+  pages   = {e0284443},
+  year    = {2023},
+  doi     = {10.1371/journal.pone.0284443}
+}
+
+@misc{tikka2024r6causal,
+  title  = {\pkg{R6causal}: {R6} classes for structural causal models},
+  author = {Tikka, Santtu},
+  year   = {2024},
+  note   = {R package version 0.8.3},
+  howpublished = {\url{https://CRAN.R-project.org/package=R6causal}}
+}
+
+@article{karvanen2024simcf,
+  title   = {Simulating counterfactuals},
+  author  = {Karvanen, Juha and Tikka, Santtu and Vihola, Matti},
+  journal = {Journal of Artificial Intelligence Research},
+  volume  = {80},
+  pages   = {1--38},
+  year    = {2024},
+  doi     = {10.1613/jair.1.15381}
+}
+
+@article{tikka2022cfid,
+  title   = {Causal effect identification from multiple incomplete data sources: {A} general search-based approach},
+  author  = {Tikka, Santtu and Hyttinen, Antti and Karvanen, Juha},
+  journal = {Journal of Statistical Software},
+  volume  = {99},
+  number  = {5},
+  pages   = {1--40},
+  year    = {2021},
+  doi     = {10.18637/jss.v099.i05}
+}
+
+@article{nowok2016synthpop,
+  title   = {\pkg{synthpop}: {B}espoke creation of synthetic data in {R}},
+  author  = {Nowok, Beata and Raab, Gillian M. and Dibben, Chris},
+  journal = {Journal of Statistical Software},
+  volume  = {74},
+  number  = {11},
+  pages   = {1--26},
+  year    = {2016},
+  doi     = {10.18637/jss.v074.i11}
+}
+
+@article{reiter2002satisfying,
+  title   = {Satisfying disclosure restrictions with synthetic data sets},
+  author  = {Reiter, Jerome P.},
+  journal = {Journal of Official Statistics},
+  volume  = {18},
+  number  = {4},
+  pages   = {531--544},
+  year    = {2002}
+}
+
+%% ── Bayesian networks and graphical models ────────────────────────────────────
+
+@article{scutari2010bnlearn,
+  title   = {Learning {B}ayesian networks with the \pkg{bnlearn} {R} package},
+  author  = {Scutari, Marco},
+  journal = {Journal of Statistical Software},
+  volume  = {35},
+  number  = {3},
+  pages   = {1--22},
+  year    = {2010},
+  doi     = {10.18637/jss.v035.i03}
+}
+
+@article{textor2016dagitty,
+  title   = {Robust causal inference using directed acyclic graphs: the {R} package \pkg{dagitty}},
+  author  = {Textor, Johannes and van der Zander, Benito and Gilthorpe, Mark S. and Li{\'{s}}kiewicz, Maciej and Ellison, George T.H.},
+  journal = {International Journal of Epidemiology},
+  volume  = {45},
+  number  = {6},
+  pages   = {1887--1894},
+  year    = {2016},
+  doi     = {10.1093/ije/dyw341}
+}
+
+@article{rosseel2012lavaan,
+  title   = {\pkg{lavaan}: {A}n {R} package for structural equation modeling},
+  author  = {Rosseel, Yves},
+  journal = {Journal of Statistical Software},
+  volume  = {48},
+  number  = {2},
+  pages   = {1--36},
+  year    = {2012},
+  doi     = {10.18637/jss.v048.i02}
+}
+
+@article{neale2016openmx,
+  title   = {\pkg{OpenMx} 2.0: Extended structural equation and statistical modeling},
+  author  = {Neale, Michael C. and Hunter, Michael D. and Pritikin, Joshua N. and Zahery, Mahsa and Brick, Timothy R. and Kirkpatrick, Robert M. and Estabrook, Ryne and Bates, Timothy C. and Maes, Hermine H. and Boker, Steven M.},
+  journal = {Psychometrika},
+  volume  = {81},
+  number  = {2},
+  pages   = {535--549},
+  year    = {2016},
+  doi     = {10.1007/s11336-014-9435-8}
+}
+
+@misc{beaumont2021causalnex,
+  title  = {\pkg{CausalNex}: A {P}ython library for causal reasoning and {B}ayesian networks},
+  author = {Beaumont, Paul and Horsburgh, Ben and Pilgerstorfer, Philip and Droth, Angel and Oentaryo, Richard and Ler, Steven and Nguyen, Hiep and Ferber, Gabriel and Lerousseau, Alexis and Sharp, Andrew},
+  year   = {2021},
+  howpublished = {\url{https://github.com/quantumblacklabs/causalnex}}
+}
+
+@misc{sharma2020dowhy,
+  title  = {\pkg{DoWhy}: {A}n end-to-end library for causal inference},
+  author = {Sharma, Amit and Kiciman, Emre},
+  year   = {2020},
+  howpublished = {\url{https://arxiv.org/abs/2011.04216}}
+}
+
+@article{lauritzen1989graphical,
+  title   = {Graphical models for associations between variables, some of which are qualitative and some quantitative},
+  author  = {Lauritzen, Steffen L. and Wermuth, Nanny},
+  journal = {Annals of Statistics},
+  volume  = {17},
+  number  = {1},
+  pages   = {31--57},
+  year    = {1989},
+  doi     = {10.1214/aos/1176347003}
+}
+
+%% ── Copulas ───────────────────────────────────────────────────────────────────
+
+@article{sklar1959fonctions,
+  title   = {Fonctions de r{\'e}partition {\`a} $n$ dimensions et leurs marges},
+  author  = {Sklar, Abe},
+  journal = {Publications de l'Institut de Statistique de l'Universit{\'e} de Paris},
+  volume  = {8},
+  pages   = {229--231},
+  year    = {1959}
+}
+
+@article{joe1996families,
+  title   = {Families of $m$-variate distributions with given margins and $m(m-1)/2$ bivariate dependence parameters},
+  author  = {Joe, Harry},
+  journal = {Distributions with Fixed Marginals and Related Topics},
+  volume  = {28},
+  pages   = {120--141},
+  year    = {1996}
+}
+
+@article{bedford2002vines,
+  title   = {Vines: {A} new graphical model for dependent random variables},
+  author  = {Bedford, Tim and Cooke, Roger M.},
+  journal = {Annals of Statistics},
+  volume  = {30},
+  number  = {4},
+  pages   = {1031--1068},
+  year    = {2002},
+  doi     = {10.1214/aos/1031689016}
+}
+
+@article{aas2009pair,
+  title   = {Pair-copula constructions of multiple dependence},
+  author  = {Aas, Kjersti and Czado, Claudia and Frigessi, Arnoldo and Bakken, Henrik},
+  journal = {Insurance: Mathematics and Economics},
+  volume  = {44},
+  number  = {2},
+  pages   = {182--198},
+  year    = {2009},
+  doi     = {10.1016/j.insmatheco.2007.02.001}
+}
+
+@article{dissmann2013selecting,
+  title   = {Selecting and estimating regular vine copulae and application to financial returns},
+  author  = {Di{\ss}mann, Jeffrey and Brechmann, Eike Christian and Czado, Claudia and Kurowicka, Dorota},
+  journal = {Computational Statistics \& Data Analysis},
+  volume  = {59},
+  pages   = {52--69},
+  year    = {2013},
+  doi     = {10.1016/j.csda.2012.08.010}
+}
+
+@book{czado2019analyzing,
+  title     = {Analyzing Dependent Data with Vine Copulas},
+  author    = {Czado, Claudia},
+  year      = {2019},
+  publisher = {Springer},
+  address   = {Cham},
+  doi       = {10.1007/978-3-030-13785-4}
+}
+
+@book{joe2014dependence,
+  title     = {Dependence Modeling with Copulas},
+  author    = {Joe, Harry},
+  year      = {2014},
+  publisher = {Chapman \& Hall/CRC},
+  address   = {Boca Raton, FL}
+}
+
+@article{nagler2022rvinecopulib,
+  title   = {\pkg{rvinecopulib}: {H}igh performance algorithms for vine copula modeling},
+  author  = {Nagler, Thomas and Vatter, Thibault},
+  journal = {Journal of Statistical Software},
+  volume  = {102},
+  number  = {5},
+  pages   = {1--34},
+  year    = {2022},
+  doi     = {10.18637/jss.v102.i05}
+}
+
+@misc{pyvinecopulib2024,
+  title  = {\pkg{pyvinecopulib}: {P}ython bindings for \pkg{vinecopulib}},
+  author = {Nagler, Thomas and Vatter, Thibault},
+  year   = {2024},
+  note   = {Python package version 0.6},
+  howpublished = {\url{https://github.com/vinecopulib/pyvinecopulib}}
+}
+
+@article{rosenblatt1952remarks,
+  title   = {Remarks on a multivariate transformation},
+  author  = {Rosenblatt, Murray},
+  journal = {Annals of Mathematical Statistics},
+  volume  = {23},
+  number  = {3},
+  pages   = {470--472},
+  year    = {1952},
+  doi     = {10.1214/aoms/1177729394}
+}
+
+@article{nagler2016evading,
+  title   = {Evading the curse of dimensionality in nonparametric density estimation with simplified vine copulas},
+  author  = {Nagler, Thomas and Czado, Claudia},
+  journal = {Journal of Multivariate Analysis},
+  volume  = {151},
+  pages   = {69--89},
+  year    = {2016},
+  doi     = {10.1016/j.jmva.2016.07.003}
+}
+
+@article{clayton1978model,
+  title   = {A model for association in bivariate life tables and its application in epidemiological studies of familial tendency in chronic disease incidence},
+  author  = {Clayton, David G.},
+  journal = {Biometrika},
+  volume  = {65},
+  number  = {1},
+  pages   = {141--151},
+  year    = {1978}
+}
+
+@article{gumbel1960bivariate,
+  title   = {Bivariate exponential distributions},
+  author  = {Gumbel, Emil J.},
+  journal = {Journal of the American Statistical Association},
+  volume  = {55},
+  number  = {292},
+  pages   = {698--707},
+  year    = {1960}
+}
+
+@article{frank1979,
+  title   = {On the simultaneous associativity of $F(x,y)$ and $x+y-F(x,y)$},
+  author  = {Frank, Maurice J.},
+  journal = {Aequationes Mathematicae},
+  volume  = {19},
+  number  = {1},
+  pages   = {194--226},
+  year    = {1979}
+}
+
+%% ── Regression and GLMs ───────────────────────────────────────────────────────
+
+@article{mccullagh1980regression,
+  title   = {Regression models for ordinal data},
+  author  = {McCullagh, Peter},
+  journal = {Journal of the Royal Statistical Society, Series B},
+  volume  = {42},
+  number  = {2},
+  pages   = {109--142},
+  year    = {1980}
+}
+
+%% ── Topological sort ──────────────────────────────────────────────────────────
+
+@article{kahn1962topological,
+  title   = {Topological sorting of large networks},
+  author  = {Kahn, Arthur B.},
+  journal = {Communications of the ACM},
+  volume  = {5},
+  number  = {11},
+  pages   = {558--562},
+  year    = {1962},
+  doi     = {10.1145/368996.369025}
+}
+
+%% ── Simulation methodology ────────────────────────────────────────────────────
+
+@article{morris2019using,
+  title   = {Using simulation studies to evaluate statistical methods},
+  author  = {Morris, Tim P. and White, Ian R. and Crowther, Michael J.},
+  journal = {Statistics in Medicine},
+  volume  = {38},
+  number  = {11},
+  pages   = {2074--2102},
+  year    = {2019},
+  doi     = {10.1002/sim.8086}
+}
+
+@article{sargent2010verification,
+  title   = {Verification and validation of simulation models},
+  author  = {Sargent, Robert G.},
+  journal = {Proceedings of the 2010 Winter Simulation Conference},
+  pages   = {166--183},
+  year    = {2010}
+}
+
+%% ── Mediation and causal effects ──────────────────────────────────────────────
+
+@book{vanderweele2015explanation,
+  title     = {Explanation in Causal Inference: {M}ethods for Mediation and Interaction},
+  author    = {VanderWeele, Tyler J.},
+  year      = {2015},
+  publisher = {Oxford University Press},
+  address   = {New York}
+}
+
+@article{glymour2019review,
+  title   = {Review of causal discovery methods based on graphical models},
+  author  = {Glymour, Clark and Zhang, Kun and Spirtes, Peter},
+  journal = {Frontiers in Genetics},
+  volume  = {10},
+  pages   = {524},
+  year    = {2019},
+  doi     = {10.3389/fgene.2019.00524}
+}
+
+%% ── Targeted learning ─────────────────────────────────────────────────────────
+
+@article{luedtke2016tloss,
+  title   = {Statistical inference for the mean outcome under a possibly non-unique optimal treatment strategy},
+  author  = {Luedtke, Alexander R. and van der Laan, Mark J.},
+  journal = {Annals of Statistics},
+  volume  = {44},
+  number  = {2},
+  pages   = {713--742},
+  year    = {2016},
+  doi     = {10.1214/15-AOS1384}
+}
+
+@book{laan2018targeted,
+  title     = {Targeted Learning in Data Science: {C}ausal Inference for Complex Longitudinal Studies},
+  author    = {van der Laan, Mark J. and Rose, Sherri},
+  year      = {2018},
+  publisher = {Springer},
+  address   = {New York}
+}
+
+%% ── R core ────────────────────────────────────────────────────────────────────
+
+@manual{rcore2024,
+  title        = {R: {A} Language and Environment for Statistical Computing},
+  author       = {{R Core Team}},
+  organization = {R Foundation for Statistical Computing},
+  address      = {Vienna, Austria},
+  year         = {2024},
+  url          = {https://www.R-project.org/}
+}
+
+%% ── Angrist/econometrics ──────────────────────────────────────────────────────
+
+@book{angrist2009mostly,
+  title     = {Mostly {H}armless {E}conometrics: {A}n {E}mpiricist's {C}ompanion},
+  author    = {Angrist, Joshua D. and Pischke, J{\"o}rn-Steffen},
+  year      = {2009},
+  publisher = {Princeton University Press},
+  address   = {Princeton, NJ}
+}
+
+@book{agresti2002categorical,
+  title     = {Categorical Data Analysis},
+  author    = {Agresti, Alan},
+  year      = {2002},
+  edition   = {2nd},
+  publisher = {Wiley},
+  address   = {Hoboken, NJ}
+}
+
+@article{wright2017ranger,
+  title   = {\pkg{ranger}: A Fast Implementation of Random Forests for High Dimensional Data in \proglang{C++} and \proglang{R}},
+  author  = {Wright, Marvin N. and Ziegler, Andreas},
+  journal = {Journal of Statistical Software},
+  volume  = {77},
+  number  = {1},
+  pages   = {1--17},
+  year    = {2017},
+  doi     = {10.18637/jss.v077.i01}
+}
+
+@article{burton2006design,
+  title   = {The design of simulation studies in medical statistics},
+  author  = {Burton, Andrea and Altman, Douglas G. and Royston, Patrick and Holder, Roger L.},
+  journal = {Statistics in Medicine},
+  volume  = {25},
+  number  = {24},
+  pages   = {4279--4292},
+  year    = {2006},
+  doi     = {10.1002/sim.2673}
+}
+
+@article{laubenbacher2024digital,
+  title   = {Digital twins in medicine},
+  author  = {Laubenbacher, Reinhard and Sluka, James P. and Glazier, James A.},
+  journal = {Nature Computational Science},
+  volume  = {4},
+  pages   = {164--171},
+  year    = {2024},
+  doi     = {10.1038/s43588-024-00609-5}
+}
+
+@article{chickering2002optimal,
+  title   = {Optimal structure identification with greedy search},
+  author  = {Chickering, David Maxwell},
+  journal = {Journal of Machine Learning Research},
+  volume  = {3},
+  pages   = {507--554},
+  year    = {2002}
+}
+
+@techreport{verma1988causal,
+  title       = {Causal networks: Semantics and expressiveness},
+  author      = {Verma, Thomas S. and Pearl, Judea},
+  institution = {UCLA Cognitive Systems Laboratory},
+  year        = {1988},
+  note        = {Technical Report R-65}
+}
+
+@article{scholkopf2021causal,
+  title   = {Toward causal representation learning},
+  author  = {Sch{\"o}lkopf, Bernhard and Locatello, Francesco and Bauer, Stefan and Ke, Nan Rosemary and Kalchbrenner, Nal and Goyal, Anirudh and Bengio, Yoshua},
+  journal = {Proceedings of the IEEE},
+  volume  = {109},
+  number  = {5},
+  pages   = {612--634},
+  year    = {2021},
+  doi     = {10.1109/JPROC.2021.3058954}
+}
+
+@article{breiman2001random,
+  title   = {Random forests},
+  author  = {Breiman, Leo},
+  journal = {Machine Learning},
+  volume  = {45},
+  number  = {1},
+  pages   = {5--32},
+  year    = {2001},
+  doi     = {10.1023/A:1010933404324}
+}
+
+@article{imai2010identification,
+  title   = {Identification, inference and sensitivity analysis for causal mediation effects},
+  author  = {Imai, Kosuke and Keele, Luke and Yamamoto, Teppei},
+  journal = {Statistical Science},
+  volume  = {25},
+  number  = {1},
+  pages   = {51--71},
+  year    = {2010},
+  doi     = {10.1214/10-STS321}
+}
+
+@article{imai2013identification,
+  title   = {Identification and sensitivity analysis for multiple causal mechanisms: Revisiting evidence from framing experiments},
+  author  = {Imai, Kosuke and Yamamoto, Teppei},
+  journal = {Political Analysis},
+  volume  = {21},
+  number  = {2},
+  pages   = {141--171},
+  year    = {2013},
+  doi     = {10.1093/pan/mps040}
+}
+
+@article{neyman1923,
+  title   = {On the application of probability theory to agricultural experiments. {E}ssay on principles. {S}ection 9},
+  author  = {Neyman, Jerzy},
+  journal = {Statistical Science},
+  volume  = {5},
+  number  = {4},
+  pages   = {465--472},
+  year    = {1990},
+  note    = {Translated from the Polish original (1923)}
+}
+
+@article{joe1993,
+  title   = {Parametric families of multivariate distributions with given margins},
+  author  = {Joe, Harry},
+  journal = {Journal of Multivariate Analysis},
+  volume  = {46},
+  number  = {2},
+  pages   = {262--282},
+  year    = {1993},
+  doi     = {10.1006/jmva.1993.1061}
+}

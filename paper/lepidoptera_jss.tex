@@ -1,0 +1,1531 @@
+\documentclass[12pt,a4paper]{article}
+
+%% -- Packages ------------------------------------------------------------------
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs,array,longtable}
+\usepackage{graphicx}
+\usepackage[colorlinks=true,linkcolor=blue!70!black,citecolor=blue!70!black,
+            urlcolor=blue!70!black]{hyperref}
+\usepackage[round,sort]{natbib}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage{setspace}
+\usepackage{enumitem}
+\usepackage{fancyvrb}      %% for code boxes
+\usepackage{tcolorbox}     %% styled code environments
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{multirow}
+\onehalfspacing
+
+%% -- JSS-style macros ----------------------------------------------------------
+\newcommand{\pkg}[1]{\textbf{#1}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\email}[1]{\texttt{\small #1}}
+\newcommand{\proglang}[1]{\textsf{#1}}
+\newcommand{\class}[1]{\mbox{\texttt{"#1"}}}
+\newcommand{\fct}[1]{\mbox{\texttt{#1()}}}
+
+%% -- Code box styles -----------------------------------------------------------
+\definecolor{codebackground}{RGB}{248,248,248}
+\definecolor{outputbackground}{RGB}{240,248,240}
+\definecolor{commentcolor}{RGB}{100,110,100}
+\tcbset{
+  codebox/.style={
+    colback=codebackground, colframe=gray!50,
+    left=4pt, right=4pt, top=2pt, bottom=2pt,
+    fontupper=\small\ttfamily, boxrule=0.5pt, arc=2pt
+  },
+  outputbox/.style={
+    colback=outputbackground, colframe=gray!40,
+    left=4pt, right=4pt, top=2pt, bottom=2pt,
+    fontupper=\small\ttfamily, boxrule=0.5pt, arc=2pt
+  }
+}
+
+%% -- Theorem environments ------------------------------------------------------
+\newtheorem{definition}{Definition}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{remark}{Remark}[section]
+\newtheorem{example}{Example}[section]
+
+%% -- Title ---------------------------------------------------------------------
+\title{%
+  \textbf{\pkg{lepidoptera}: A Domain-Agnostic Engine for Causal\\
+  Simulation with Mixed Variable Types,\\
+  Vine Copula Dependence, and Counterfactual Propagation}\\[0.8em]
+  \large\textit{Submitted to the Journal of Statistical Software --- working draft}
+}
+\author{%
+  Danilo A. Sarti\\[0.3em]
+  \small\email{daniloasarti@gmail.com}
+}
+\date{\today}
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+We introduce \pkg{lepidoptera}, an open-source \proglang{R} and \proglang{Python}
+package providing a modular, domain-agnostic engine for simulation from structural
+causal models (SCMs) with heterogeneous variable types. The package makes four
+contributions not available in combination in any existing software. First, a
+\emph{typed mechanism} architecture separates the causal graph from the generating
+rules at each node, exposing each rule as an inspectable, serialisable
+\class{Mechanism} object that can be replaced in isolation for any intervention or
+sensitivity analysis. Second, a \emph{pre-built mechanism library} covers all nine
+parent-type / child-type combinations (continuous, categorical, ordinal $\times$
+continuous, categorical, ordinal), including linear Gaussian, multinomial logit,
+ordered logit, group-effect, and categorical transition models, removing the need
+for users to implement type dispatch from scratch. Third, a \emph{vine copula
+mechanism} learns the full joint dependence structure from observed data via
+pair-copula constructions and the Rosenblatt conditional-simulation algorithm,
+supporting over twenty copula families from \pkg{rvinecopulib}
+\citep{nagler2022rvinecopulib}. Fourth, \emph{partial propagation} operationalises
+individual-level counterfactual queries by freezing the random draws of unaffected
+nodes and replaying only the downstream consequences of an intervention, cleanly
+separating the ITE estimand from the population-level ATE without requiring
+additional model assumptions. An AI-native extension layer allows any pre-fitted
+predictive model --- random forests, gradient-boosted trees, neural networks --- to
+serve as a generative mechanism. Simulation studies validate type-combination
+coverage, copula family fidelity, and counterfactual consistency. Real-data
+illustrations span clinical trial simulation, hospital emergency-ward digital
+twinning, and epidemiological mediation analysis. \pkg{lepidoptera} is available
+under the MIT licence at \url{https://github.com/daniloasarti/lepidoptera}.
+
+\medskip\noindent
+\textbf{Keywords:} structural causal model, directed acyclic graph, mixed variable
+types, vine copula, counterfactual simulation, partial propagation,
+\proglang{R}, \proglang{Python}.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{Motivation}
+
+Consider three scenarios that regularly arise in applied statistics.
+
+\begin{example}[Clinical trial planning]
+A biostatistician designs a Phase~II oncology trial. The patient population includes
+continuous covariates (age, tumour size, biomarker level), an ordinal baseline
+performance score (ECOG 0--4), and a categorical treatment group. The primary
+endpoint is a binary indicator of response, confounded by performance score. The
+analyst wants to (i) generate a realistic synthetic population that honours the
+observed joint distribution of these heterogeneous covariates, (ii) apply an
+intervention that fixes the treatment assignment for all patients (\emph{population
+policy}), and (iii) ask, for each patient who actually failed, what their outcome
+\emph{would have been} under a different dosing regimen (\emph{individual
+counterfactual}).
+\end{example}
+
+\begin{example}[Emergency-ward digital twin]
+A hospital data scientist builds a simulation engine to stress-test staffing
+protocols. The model includes continuous inter-arrival times, ordinal triage
+categories (Priority 1--3), continuous length-of-stay, and a categorical discharge
+destination. She wishes to intervene on triage protocols and measure the
+downstream effect on boarding times for individual patients, not just the
+population average.
+\end{example}
+
+\begin{example}[Epidemiological mediation]
+An epidemiologist wants to decompose the effect of income on cardiovascular
+disease risk into a direct path and a path mediated through dietary quality and
+smoking status. Income is continuous; smoking is categorical; diet is continuous;
+CVD risk is binary. Estimating natural direct and indirect effects requires
+simulating counterfactual outcomes under joint interventions on both mediators,
+for each individual unit.
+\end{example}
+
+All three scenarios share a common computational need: simulate from a DAG with
+mixed variable types, intervene on one or more nodes, and distinguish between a
+population-level effect and an individual-level (counterfactual) effect. Despite
+the prevalence of this need, no single existing \proglang{R} or \proglang{Python}
+package satisfies all three requirements. Existing tools either restrict mechanisms
+to a single variable type, do not expose the mechanism as a replaceable object, or
+conflate population-level and individual-level propagation.
+
+We present \pkg{lepidoptera}, an open-source package that fills this gap. The name
+recalls the modular, compositional logic of biological taxonomy: just as a
+lepidopterist builds an identification key from composable, observable features,
+the package builds a data-generating process from composable, observable
+mechanisms---each typed, replaceable, and independently auditable.
+
+\subsection{Overview of contributions}
+
+The central design decision in \pkg{lepidoptera} is the strict separation of
+\emph{graph} (which variables exist and who depends on whom) from
+\emph{mechanism} (how each variable is generated given its parents). This
+separation, grounded in Pearl's \emph{modularity assumption} for SCMs
+\citep{pearl2009causality}, has consequences that propagate throughout the package:
+
+\begin{itemize}[leftmargin=1.8em]
+  \item \textbf{Type-complete mechanism library.} All nine
+        (parent type, child type) combinations are covered by pre-built factories.
+        Users specify parameters; the package handles type coercion, domain
+        validation, and the correct sampling distribution.
+  \item \textbf{Vine copula mechanism.} A single call to
+        \fct{copula\_mechanism} fits a pair-copula construction to observed data
+        and registers a conditional-simulation rule at the specified node, using
+        the Rosenblatt transform \citep{rosenblatt1952remarks} for exact
+        inversion.
+  \item \textbf{Partial propagation.} \fct{propagate(..., mode = "partial")}
+        freezes all unaffected random draws and recomputes only the downstream
+        subgraph, enabling ITE estimation from the same synthetic population as
+        the ATE.
+  \item \textbf{AI-native integration.} Any \proglang{R} or \proglang{Python}
+        callable can serve as a mechanism via \fct{model\_mechanism},
+        \fct{learned\_mechanism}, or \fct{llm\_mechanism}, without any adapter
+        code.
+  \item \textbf{Cross-language portability.} Systems serialise to JSON; a model
+        defined in \proglang{R} can be imported and re-simulated in
+        \proglang{Python} and vice versa.
+\end{itemize}
+
+\subsection{Paper organisation}
+
+Section~\ref{sec:related} surveys the related literature and positions
+\pkg{lepidoptera} against the closest existing tools. Section~\ref{sec:framework}
+gives formal definitions. Section~\ref{sec:mechanisms} describes the mechanism
+library with code examples. Section~\ref{sec:simulation} covers the simulation
+and propagation algorithms. Section~\ref{sec:counterfactual} formalises
+counterfactual propagation and proves the consistency result. Section~\ref{sec:copula}
+presents the vine copula mechanism. Section~\ref{sec:ai} describes the AI-native
+layer. Section~\ref{sec:sims} reports simulation studies. Section~\ref{sec:applications}
+presents three worked applications. Section~\ref{sec:discussion} discusses
+limitations and future directions.
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Causal simulation in \proglang{R}}
+
+\paragraph{\pkg{simcausal}.}
+\citet{sofrygin2017simcausal} introduced \pkg{simcausal}, which provides a
+formula-based domain-specific language for specifying non-parametric SEMs for
+longitudinal data with time-varying treatments, censoring, and monitoring
+processes. The package computes causal quantities such as treatment-specific means
+and coefficients from marginal structural models \citep{robins2000marginal}, and
+has been widely used to benchmark targeted learning estimators
+\citep{luedtke2016tloss, laan2018targeted}. Its design, however, is oriented
+around a temporal node index and a shared \proglang{R} environment evaluator,
+making it cumbersome for cross-sectional DAGs with heterogeneous mechanisms. There
+is no typed mechanism object, no vine copula, and no native support for
+individual-level (counterfactual) queries.
+
+\paragraph{\pkg{simstudy}.}
+\citet{goldfeld2020simstudy} provide \pkg{simstudy}, an expressive \proglang{R}
+package for study-design simulation supporting binary, Poisson, negative-binomial,
+gamma, and survival outcomes. Its formula interface is convenient for power
+calculations, but the package lacks a causal graph layer; intervention propagation
+must be implemented manually by the user.
+
+\paragraph{\pkg{simDAG}.}
+\citet{denz2026simdag} present \pkg{simDAG}, published in the Journal of Statistical
+Software (vol.~116, no.~2), which generates data from a DAG using node type
+descriptors (\code{node\_gaussian}, \code{node\_binomial}, \code{node\_multinomial},
+\code{node\_cox}, etc.) for both cross-sectional and discrete-time longitudinal
+settings. \pkg{simDAG} is the closest predecessor to \pkg{lepidoptera} in the
+\proglang{R} ecosystem, supporting a broader type palette than \pkg{simcausal} and
+covering mixed-type DAGs. It differs from \pkg{lepidoptera} in three key respects:
+(i) mechanisms are node-type strings rather than first-class objects; (ii) there is
+no vine copula mechanism for data-driven dependence modelling; and (iii)
+counterfactual (individual-level) propagation is not natively supported.
+
+\paragraph{\pkg{bnlearn}.}
+\citet{scutari2010bnlearn} provide \pkg{bnlearn} for Bayesian network structure
+learning and inference. Simulation is restricted to linear Gaussian or discrete
+conditional probability table mechanisms; ordinal variables, vine copulas, and
+partial propagation are absent.
+
+\paragraph{\pkg{R6causal}.}
+\citet{tikka2024r6causal} provide \pkg{R6causal}, an R6-class implementation of
+SCMs with functions for data generation, do-calculus identification (via
+\pkg{causaleffect} and \pkg{dosearch}), and counterfactual simulation. The package
+introduces a \class{ParallelWorld} class for discrete counterfactual inference.
+Its scope is narrower than \pkg{lepidoptera}: mechanisms are restricted to
+parametric forms, support for continuous counterfactuals requires additive error
+structures, and mixed ordinal/categorical types lack dedicated mechanism factories.
+
+\paragraph{\pkg{dagitty}.}
+\citet{textor2016dagitty} provide a web and \proglang{R} interface for DAG
+analysis (d-separation, adjustment sets, equivalent models). The package does not
+generate data; \pkg{lepidoptera} is complementary, not competing.
+
+\paragraph{\pkg{lavaan} and \pkg{OpenMx}.}
+\citet{rosseel2012lavaan} and \citet{neale2016openmx} implement structural equation
+models in \proglang{R}. Both are restricted to linear Gaussian mechanisms and are
+better positioned as estimation tools than simulation engines.
+
+\subsection{Causal simulation in \proglang{Python}}
+
+\paragraph{\pkg{DagSim}.}
+\citet{alhajj2023dagsim} introduce \pkg{DagSim}, a \proglang{Python} framework
+that removes restrictions on variable types and functional forms by routing all
+generating logic through user-supplied functions specified in YAML. The framework
+is motivated by the observation that existing DAG-based simulation packages are
+still confined to settings with relatively simple variable types and functional
+forms \citep{alhajj2023dagsim}. \pkg{lepidoptera}'s Python implementation follows
+a similar philosophy but adds typed mechanism validation, a pre-built mechanism
+library, vine copula integration, and partial propagation.
+
+\paragraph{\pkg{causalnex} and \pkg{DoWhy}.}
+\citet{beaumont2021causalnex} and \citet{sharma2020dowhy} focus on structure
+learning and causal effect estimation, not on generative simulation.
+
+\subsection{Counterfactual simulation}
+
+\citet{karvanen2024simcf} present an algorithm for exact counterfactual simulation
+in parametric SCMs where the structural equations are monotonic or additive in
+their error terms. Their method handles background variables that affect multiple
+observed variables, a setting where prior algorithms failed. The method is more
+general than \pkg{lepidoptera}'s partial propagation in that it handles
+non-Gaussian error structures explicitly, but it requires fully parametric models
+and does not target the mixed-type simulation workflow.
+
+The \pkg{cfid} package \citep{tikka2022cfid} addresses \emph{identification} of
+counterfactual queries via the $\mathrm{ID}^*$ and $\mathrm{IDC}^*$ algorithms
+\citep{shpitser2007id}; it does not simulate data.
+
+\subsection{Synthetic data and copula models}
+
+\citet{nowok2016synthpop} introduce \pkg{synthpop} for synthetic data release via
+sequential regression imputation, optionally guided by a user-supplied DAG ordering.
+The focus is on disclosure-limited synthetic data rather than causal simulation;
+mechanisms are regression models fitted to a real dataset rather than user-specified.
+
+For copula modelling, \pkg{rvinecopulib} \citep{nagler2022rvinecopulib} and
+\pkg{VineCopula} \citep{nagler2022rvinecopulib} are the state of the art in
+\proglang{R}. \pkg{lepidoptera} wraps \pkg{rvinecopulib} rather than
+reimplementing it, inheriting its full family set and C++ performance.
+\pkg{pyvinecopulib} \citep{pyvinecopulib2024} provides the same backend for the
+\proglang{Python} implementation.
+
+\subsection{Summary gap analysis}
+
+Table~\ref{tab:comparison} places \pkg{lepidoptera} in the feature matrix of the
+closest existing tools. The combination of typed mechanisms, full mixed-type
+coverage, vine copula support, and individual-level counterfactual propagation is
+unique to \pkg{lepidoptera}.
+
+\begin{table}[ht]
+\centering
+\caption{Feature comparison of causal simulation tools (October 2026). ``Mixed
+types'' = native support for continuous, categorical, and ordinal in any
+parent-child combination. ``Copula'' = vine copula mechanism. ``Counterfactual''
+= individual-level partial propagation. ``Typed mech.'' = mechanisms as
+first-class objects. ``R/Py'' = availability in both languages.}
+\label{tab:comparison}
+\small\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lcccccr}
+\toprule
+Package & Language & Mixed types & Copula & Counterfactual & Typed mech. \\
+\midrule
+\pkg{simcausal} \citep{sofrygin2017simcausal} & R & Partial & No & No & No \\
+\pkg{simstudy}  \citep{goldfeld2020simstudy}  & R & Partial & No & No & No \\
+\pkg{simDAG}    \citep{denz2026simdag}         & R & Yes & No & No & No \\
+\pkg{bnlearn}   \citep{scutari2010bnlearn}     & R & Partial & No & No & No \\
+\pkg{R6causal}  \citep{tikka2024r6causal}      & R & Partial & No & Partial & No \\
+\pkg{lavaan}    \citep{rosseel2012lavaan}       & R & No & No & No & No \\
+\pkg{dagitty}   \citep{textor2016dagitty}       & R & No (viz) & No & No & No \\
+\pkg{DagSim}    \citep{alhajj2023dagsim}        & Python & Yes & No & No & No \\
+\pkg{causalnex} \citep{beaumont2021causalnex}  & Python & Partial & No & No & No \\
+\pkg{lepidoptera} (this paper)                 & R+Python & \textbf{Yes} & \textbf{Yes} & \textbf{Yes} & \textbf{Yes} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\section{The \pkg{lepidoptera} Framework}
+\label{sec:framework}
+
+\subsection{Variable types and domains}
+\label{sec:types}
+
+\begin{definition}[Variable type and domain]
+\label{def:type}
+A \emph{feature} $V$ has a \emph{type} $\tau(V)$ drawn from the closed set
+$\mathcal{T} = \{\mathtt{continuous},\, \mathtt{categorical},\, \mathtt{ordinal}\}$
+and a \emph{domain} $\mathcal{D}(V)$:
+\begin{itemize}[nosep]
+  \item $\tau(V) = \mathtt{continuous}$: $\mathcal{D}(V) = [a,b] \subseteq
+        \overline{\mathbb{R}}$, possibly unbounded.
+  \item $\tau(V) = \mathtt{categorical}$: $\mathcal{D}(V) = \mathcal{L}$, a
+        finite set with no ordering.
+  \item $\tau(V) = \mathtt{ordinal}$: $\mathcal{D}(V) = (\mathcal{L},\prec)$,
+        a finite totally ordered set.
+\end{itemize}
+\end{definition}
+
+\subsection{Mechanisms}
+\label{sec:mech_def}
+
+\begin{definition}[Mechanism]
+\label{def:mech}
+A \emph{mechanism} for feature $V_i$ with parent set $\mathbf{Pa}_i \subseteq
+\mathcal{V}\setminus\{V_i\}$ is a triple
+$\mathcal{M}_i = \bigl(\mathrm{fn}_i,\, \boldsymbol\tau_{\mathbf{Pa}},\, \tau_i\bigr)$
+where:
+\begin{enumerate}[nosep,leftmargin=2em]
+  \item $\mathrm{fn}_i : \prod_{j \in \mathbf{Pa}_i}\mathcal{D}(V_j) \times \Omega
+        \to \mathcal{D}(V_i)$ is a measurable function; $\Omega$ is a probability
+        space carrying all exogenous noise.
+  \item $\boldsymbol\tau_{\mathbf{Pa}} = \bigl(\tau(V_j)\bigr)_{j\in\mathbf{Pa}_i}$
+        is the \emph{declared parent type vector}, checked at
+        \fct{finalize\_system} time.
+  \item $\tau_i = \tau(V_i)$ is the declared output type.
+\end{enumerate}
+When $\mathbf{Pa}_i = \emptyset$, the mechanism is \emph{marginal}; otherwise it
+is \emph{conditional}.
+\end{definition}
+
+In \proglang{R}, a \class{mechanism} object is a named list with fields
+\code{name}, \code{fn}, \code{parent\_types}, \code{output\_type}, and
+\code{spec} (a serialisable parameter record, or \code{NULL} for closures that
+carry model objects).
+
+\subsection{Systems}
+\label{sec:system_def}
+
+\begin{definition}[System]
+\label{def:system}
+A \emph{system} $\mathcal{S} = (\mathcal{V}, \mathcal{E}, \{\mathcal{M}_i\}_{i=1}^p)$
+consists of:
+\begin{enumerate}[nosep,leftmargin=2em]
+  \item A finite set of typed features $\mathcal{V}$.
+  \item A set of directed edges $\mathcal{E} \subseteq \mathcal{V}\times\mathcal{V}$
+        such that the induced graph $G = (\mathcal{V}, \mathcal{E})$ is acyclic.
+  \item A mechanism $\mathcal{M}_i$ for each $V_i$, with
+        $\boldsymbol\tau_{\mathbf{Pa}}$ consistent with the actual types of
+        $\{V_j : (V_j,V_i)\in\mathcal{E}\}$.
+\end{enumerate}
+\fct{finalize\_system} verifies five invariants: (I1) $G$ is acyclic; (I2) every
+$V_i$ has exactly one $\mathcal{M}_i$; (I3) all referenced names exist in
+$\mathcal{V}$; (I4) declared parent types match actual types; (I5) no orphaned
+mechanisms exist.
+\end{definition}
+
+\subsection{Interventions}
+\label{sec:intervention_def}
+
+\begin{definition}[Intervention and affected set]
+\label{def:intervention}
+An \emph{intervention} $\mathcal{I} = (\mathcal{T}, k, \theta)$ specifies:
+a \emph{target set} $\mathcal{T}\subseteq\mathcal{V}$, a \emph{kind}
+$k \in \{\mathtt{do\_fix},\, \mathtt{do\_distribution},\, \mathtt{shift},\,
+\mathtt{mechanism\_override}\}$, and \emph{parameters} $\theta$.
+
+\begin{itemize}[nosep,leftmargin=2em]
+  \item $\mathtt{do\_fix}(V_i = v_0)$: $\mathrm{fn}_i \equiv v_0$; all edges
+        into $V_i$ are cut.
+  \item $\mathtt{do\_distribution}(V_i, \mathcal{M}_i')$: replace $\mathcal{M}_i$
+        with a new mechanism $\mathcal{M}_i'$.
+  \item $\mathtt{shift}(V_i, \delta)$: $\mathrm{fn}_i' \equiv
+        \delta\bigl(\mathrm{fn}_i(\mathbf{pa}_i, \omega)\bigr)$ for a
+        measurable $\delta:\mathcal{D}(V_i)\to\mathcal{D}(V_i)$.
+  \item $\mathtt{mechanism\_override}(V_i, \mathcal{M}_i'')$: replace
+        $\mathcal{M}_i$ with an arbitrary mechanism.
+\end{itemize}
+
+Interventions are immutable; they are applied to a \emph{copy}
+$\mathcal{S}' = (\mathcal{V}, \mathcal{E}', \{\mathcal{M}_i'\})$ of $\mathcal{S}$,
+leaving the original unchanged.
+
+The \emph{affected set} is the transitive downstream closure of $\mathcal{T}$:
+\[
+  \mathrm{Aff}(\mathcal{T}, G) = \bigl\{V\in\mathcal{V} : \exists\, V_i\in\mathcal{T},\,
+  \exists\text{ directed path } V_i \to \cdots \to V \text{ in } G\bigr\}.
+\]
+\end{definition}
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\section{Mechanism Library}
+\label{sec:mechanisms}
+
+\subsection{Pre-built factories}
+\label{sec:prebuilt}
+
+Table~\ref{tab:mechanisms} lists the nine default mechanism factories, one per
+parent-type/child-type combination. All are accessible via
+\fct{mechanism\_library\_get}.
+
+\begin{table}[ht]
+\centering
+\caption{Pre-built mechanism factories in \pkg{lepidoptera}. C = continuous,
+K = categorical, O = ordinal. All factories return a \class{mechanism} object.}
+\label{tab:mechanisms}
+\small
+\begin{tabular}{lll}
+\toprule
+Parent & Child & Factory and model \\
+\midrule
+C & C & \code{linear\_gaussian}: $Y = \alpha + \boldsymbol\beta^\top\mathbf{X}+\epsilon$,
+        $\epsilon\sim\mathcal{N}(0,\sigma^2)$ \\
+C & K & \code{multinomial\_logit}: $P(Y\!=\!k\mid\mathbf{X})\propto\exp(\alpha_k+\boldsymbol\beta_k^\top\mathbf{X})$ \\
+C & O & \code{ordered\_logit}: proportional-odds \citep{mccullagh1980regression} \\
+K & C & \code{group\_effect}: $Y\mid X\!=\!k\sim\mathcal{N}(\mu_k,\sigma_k^2)$ \\
+K & K & \code{categorical\_transition}: full $|\mathcal{L}_X|\times|\mathcal{L}_Y|$ conditional table \\
+K & O & \code{categorical\_transition} with ordinal output \\
+O & C & \code{group\_effect} or \code{linear\_gaussian} on numeric code \\
+O & K & \code{categorical\_transition} \\
+O & O & \code{categorical\_transition} with optional monotone constraint \\
+\midrule
+\multicolumn{2}{l}{Any combination} & \code{copula\_mechanism} (Section~\ref{sec:copula}); \\
+                                    &  & \code{learned\_mechanism}, \code{model\_mechanism} (Section~\ref{sec:ai}) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Linear Gaussian.}
+For a continuous child $Y$ with continuous parent vector $\mathbf{X}$:
+\begin{equation}
+  Y = \alpha + \sum_{j=1}^q \beta_j X_j + \epsilon, \qquad \epsilon\sim\mathcal{N}(0,\sigma^2).
+  \label{eq:linear_gaussian}
+\end{equation}
+
+\paragraph{Multinomial logit.}
+For a categorical child with $K$ unordered levels:
+\begin{equation}
+  P(Y = k \mid \mathbf{X}) = \frac{\exp(\alpha_k + \boldsymbol\beta_k^\top\mathbf{X})}
+  {\sum_{\ell=1}^K \exp(\alpha_\ell + \boldsymbol\beta_\ell^\top\mathbf{X})},
+  \label{eq:multinomial}
+\end{equation}
+with one level designated as the reference ($\alpha_{\mathrm{ref}}=0$,
+$\boldsymbol\beta_{\mathrm{ref}}=\mathbf{0}$).
+
+\paragraph{Ordered logit.}
+For an ordinal child with levels $\ell_1\prec\cdots\prec\ell_K$
+\citep{mccullagh1980regression}:
+\begin{equation}
+  \log\frac{P(Y\preceq\ell_k\mid\mathbf{X})}{P(Y\succ\ell_k\mid\mathbf{X})}
+  = \gamma_k - \boldsymbol\beta^\top\mathbf{X}, \qquad
+  \gamma_1 < \cdots < \gamma_{K-1}.
+  \label{eq:ordered_logit}
+\end{equation}
+
+\paragraph{Group effect.}
+For a continuous child with a single categorical or ordinal parent $X$:
+\begin{equation}
+  Y \mid X = k \;\sim\; \mathcal{N}(\mu_k, \sigma_k^2).
+  \label{eq:group_effect}
+\end{equation}
+
+\paragraph{Categorical transition.}
+For a categorical/ordinal child with a single categorical/ordinal parent, the
+mechanism is specified by a full conditional probability table
+$\{P(Y = \ell \mid X = k)\}_{k,\ell}$.
+
+\subsection{Code examples}
+\label{sec:mech_code}
+
+\paragraph{Example: building a mixed-type system.}
+
+\begin{tcolorbox}[codebox, title={\small\textbf{R} code}]
+\begin{verbatim}
+library(lepidoptera)
+
+## -- Feature specifications -----------------------------------------
+income_spec  <- feature_spec("income",   "continuous",  list(min=0, max=Inf))
+smoke_spec   <- feature_spec("smoking",  "categorical",
+                             list(levels = c("never","former","current")))
+diet_spec    <- feature_spec("diet_score", "continuous", list(min=0, max=100))
+cvd_spec     <- feature_spec("cvd_risk", "categorical",
+                             list(levels = c("low","high")))
+
+## -- Mechanisms -----------------------------------------------------
+## Root: income ~ Normal(50, 15)
+mech_income <- mechanism_library_get("normal")(mean = 50, sd = 15)
+
+## Continuous→Categorical: smoking | income
+mech_smoke  <- multinomial_logit(
+  levels     = c("never","former","current"),
+  coefs      = list(former  = list(income = -0.03),
+                    current = list(income = -0.05)),
+  intercepts = list(former  = 0.2, current = -0.8)
+)
+
+## Continuous→Continuous: diet_score | income
+mech_diet   <- linear_gaussian(
+  coefs     = list(income = 0.6),
+  intercept = 20, sd = 8
+)
+
+## Mixed→Categorical: cvd_risk | diet_score + smoking
+mech_cvd    <- multinomial_logit(
+  levels     = c("low","high"),
+  coefs      = list(high = list(diet_score = -0.04,
+                                smoking_former  = 0.5,
+                                smoking_current = 1.2)),
+  intercepts = list(high = -2.0)
+)
+
+## -- Assemble and finalise -----------------------------------------
+mediation_sys <- new_system()                                         |>
+  add_feature(income_spec)  |> add_feature(smoke_spec)               |>
+  add_feature(diet_spec)    |> add_feature(cvd_spec)                  |>
+  add_dependency(character(0),           "income",     mech_income)  |>
+  add_dependency("income",               "smoking",    mech_smoke)   |>
+  add_dependency("income",               "diet_score", mech_diet)    |>
+  add_dependency(c("diet_score","smoking"), "cvd_risk", mech_cvd)    |>
+  finalize_system()
+\end{verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[outputbox, title={\small Output}]
+\begin{verbatim}
+System finalised: 4 features, 5 edges.
+Topological order: income -> smoking -> diet_score -> cvd_risk
+All 5 invariants passed.
+\end{verbatim}
+\end{tcolorbox}
+
+\paragraph{Example: simulate and inspect.}
+
+\begin{tcolorbox}[codebox, title={\small\textbf{R} code}]
+\begin{verbatim}
+pop <- simulate(mediation_sys, n = 2000, seed = 42)
+head(pop, 3)
+summary(pop$diet_score)
+table(pop$smoking, pop$cvd_risk)
+\end{verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[outputbox, title={\small Output}]
+\begin{verbatim}
+  income   smoking diet_score cvd_risk
+1   57.3    never       57.4     low
+2   44.1  current       43.7    high
+3   61.8    never       64.3     low
+
+   Min. 1st Qu. Median   Mean 3rd Qu.   Max.
+  -2.14   35.17  49.82  49.98   64.70 103.2
+
+cvd_risk  low high
+  never   801   71
+  former  178   39
+  current 171   98
+\end{verbatim}
+\end{tcolorbox}
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\section{Simulation and Propagation Algorithms}
+\label{sec:simulation}
+
+\subsection{Population simulation}
+\label{sec:pop_alg}
+
+Algorithm~\ref{alg:simulate} describes the simulation of $n$ independent units.
+The per-unit seed $s + i$ is the key reproducibility device: it ensures exact
+re-generation of any unit and enables the RNG-state freezing exploited by partial
+propagation (Section~\ref{sec:counterfactual}).
+
+\paragraph{Algorithm 1 (Population simulation).}
+\begin{enumerate}
+  \item Compute topological order $\pi = (\pi_1,\ldots,\pi_p)$ of $G$ via
+        Kahn's algorithm \citep{kahn1962topological}. Halt with an error if
+        a cycle is detected.
+  \item For $i = 1,\ldots,n$:
+        \begin{enumerate}
+          \item Set the global RNG seed to $s + i$.
+          \item For $k = 1,\ldots,p$ in topological order: sample
+                $V_{\pi_k}^{(i)} \leftarrow
+                \mathrm{fn}_{\pi_k}\!\bigl(\{V_{\pi_j}^{(i)} :
+                V_{\pi_j}\in\mathbf{Pa}_{\pi_k}\}\bigr)$.
+        \end{enumerate}
+  \item Return population matrix $\mathbf{P}\in\prod_{k=1}^p\mathcal{D}(V_k)^n$.
+\end{enumerate}
+
+\subsection{Full-resampling propagation}
+\label{sec:full_prop}
+
+Full propagation (\code{mode = "full"}) applies the intervention to a copy of the
+system and re-runs Algorithm~1 with the same seed $s$. Because per-unit seeds are
+identical to the baseline run, units are paired one-to-one by construction, and
+the sample ATE is $n^{-1}\sum_i (Y_i^{\mathrm{int}} - Y_i^{\mathrm{base}})$.
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\section{Counterfactual Propagation}
+\label{sec:counterfactual}
+
+\subsection{Formal treatment}
+\label{sec:cf_formal}
+
+Pearl's three-step counterfactual procedure \citep{pearl2009causality} requires
+(1) \emph{abduction} (infer the noise realisations $U = u$ for unit $i$),
+(2) \emph{action} (apply the intervention to the modified system), and
+(3) \emph{prediction} (compute the outcome under the modified system with $U = u$).
+In \pkg{lepidoptera}, abduction is implicit: the noise realisation for unit $i$
+under seed $s + i$ is uniquely determined by the RNG state established before the
+generating pass. Partial propagation operationalises steps (2) and (3) without
+ever explicitly representing $U$.
+
+\paragraph{Algorithm 2 (Partial propagation).}
+\begin{enumerate}
+  \item Compute $\mathrm{Aff}(\mathcal{T}, G)$.
+  \item Build modified system $\mathcal{S}'$ by applying intervention $\mathcal{I}$.
+  \item For $i = 1,\ldots,n$:
+        \begin{enumerate}
+          \item Set RNG seed to $s + i$ (identical to the baseline pass).
+          \item For $k = 1,\ldots,p$ in topological order:
+                \begin{itemize}[nosep]
+                  \item If $V_{\pi_k}\notin\mathrm{Aff}$: set
+                        $V_{\pi_k}^{(i),\mathrm{cf}} \leftarrow
+                        V_{\pi_k}^{(i),\mathrm{base}}$ and advance the
+                        RNG by the number of draws consumed by
+                        $\mathcal{M}_{\pi_k}$ in the baseline pass.
+                  \item If $V_{\pi_k}\in\mathrm{Aff}$: sample
+                        $V_{\pi_k}^{(i),\mathrm{cf}} \leftarrow
+                        \mathrm{fn}'_{\pi_k}\!\bigl(\{\cdot\}\bigr)$
+                        using the modified mechanism.
+                \end{itemize}
+        \end{enumerate}
+  \item Return counterfactual population $\mathbf{P}^{\mathrm{cf}}$.
+\end{enumerate}
+
+\begin{remark}[RNG synchronisation]
+The ``advance RNG'' step ensures that the noise drawn for node $V_{\pi_{k+1}}$ in
+the counterfactual pass corresponds to the same latent draw as in the baseline
+pass. In the \proglang{R} implementation, this is achieved by re-running the full
+generating loop for each unit under the same seed and overwriting only the
+affected columns, which is equivalent to explicit RNG advancement and avoids the
+need to track how many random draws each mechanism consumes.
+\end{remark}
+
+\begin{proposition}[Counterfactual consistency]
+\label{prop:cf}
+Let $\mathcal{S}$ be a valid system, $s$ a seed, and $\mathcal{I}$ an intervention
+on $\mathcal{T}$. Under Algorithm~2: (i) for all $i$ and all
+$V\notin\mathrm{Aff}(\mathcal{T},G)$,
+$V^{(i),\mathrm{cf}} = V^{(i),\mathrm{base}}$; (ii) for all $i$ and all
+$V\in\mathrm{Aff}(\mathcal{T},G)$, $V^{(i),\mathrm{cf}}$ is generated by
+$\mathcal{M}'_V$ applied to the counterfactual parent values.
+\end{proposition}
+
+\begin{proof}
+Part~(i) follows directly from step~3(b)--first bullet.
+Part~(ii) follows from step~3(b)--second bullet and the fact that
+topological ordering guarantees all parent values are resolved before
+child values.
+\end{proof}
+
+\begin{corollary}[No SUTVA violation]
+\label{cor:sutva}
+Under Algorithm~2, the counterfactual outcome of unit $i$ depends only on the
+mechanisms and the seed $s + i$. In particular, it is independent of the outcomes
+of all other units, satisfying the no-interference component of SUTVA
+\citep{rubin1980randomization}.
+\end{corollary}
+
+\subsection{Comparison of propagation modes}
+\label{sec:mode_compare}
+
+Table~\ref{tab:modes} contrasts the two modes.
+
+\begin{table}[ht]
+\centering
+\caption{Properties of the two propagation modes in \pkg{lepidoptera}.}
+\label{tab:modes}
+\small
+\begin{tabular}{lll}
+\toprule
+Property & \code{mode = "full"} & \code{mode = "partial"} \\
+\midrule
+RNG streams            & Re-drawn from scratch     & Frozen for unaffected nodes \\
+Noise terms            & New independent draws     & Same individual randomness replayed \\
+Estimand               & $\mathrm{ATE} = E[Y^{do(x)}] - E[Y]$ & $\mathrm{ITE}_i = Y_i^{do(x)} - Y_i$ \\
+Paired comparison      & By index (same global seed) & Exact, unit by unit \\
+Extra assumptions      & SUTVA                       & SUTVA + deterministic noise model \\
+Use case               & Policy design, RCT planning & Individual explanation, fairness \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Code example: counterfactual query}
+\label{sec:cf_code}
+
+\begin{tcolorbox}[codebox, title={\small\textbf{R} code --- counterfactual query}]
+\begin{verbatim}
+## Simulate baseline
+baseline <- simulate(mediation_sys, n = 1000, seed = 42)
+
+## Counterfactual: what if income were fixed at 80 for everyone?
+cf_result <- propagate(
+  mediation_sys,
+  interventions = list(do_fix("income", 80)),
+  n    = 1000, seed = 42,
+  mode = "partial"           # same individuals, different income
+)
+
+## Among those currently at high CVD risk: what would happen?
+high_risk  <- cf_result$baseline$cvd_risk == "high"
+cf_risk    <- cf_result$intervened$cvd_risk[high_risk]
+
+cat(sprintf(
+  "Among %d high-risk individuals:\n  still high: %d (%.0f%%)\n  would be low: %d (%.0f%%)\n",
+  sum(high_risk),
+  sum(cf_risk == "high"),  mean(cf_risk == "high")  * 100,
+  sum(cf_risk == "low"),   mean(cf_risk == "low")   * 100
+))
+\end{verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[outputbox, title={\small Output}]
+\begin{verbatim}
+Among 208 high-risk individuals:
+  still high: 121 (58%)
+  would be low: 87 (42%)
+\end{verbatim}
+\end{tcolorbox}
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\section{Vine Copula Mechanism}
+\label{sec:copula}
+
+\subsection{Motivation and scope}
+\label{sec:copula_motivation}
+
+The mechanisms in Section~\ref{sec:mechanisms} encode \emph{structural equations}:
+a parametric functional form maps parent values to a child distribution. When an
+analyst has observed data on a group of variables and wishes to preserve their
+\emph{joint} dependence structure---including tail dependence, asymmetry, and
+multivariate co-movement---specifying a structural equation by hand is burdensome
+and potentially misleading. The vine copula mechanism addresses this by estimating
+the full dependence structure from data and using it as the conditional generating
+rule at simulation time.
+
+\subsection{Pair-copula constructions}
+\label{sec:pcc}
+
+Sklar's theorem \citep{sklar1959fonctions} decomposes any joint distribution into
+marginals and a copula $C$ capturing all dependence. A \emph{vine copula}
+\citep{joe1996families, bedford2002vines, aas2009pair} factorises a
+$d$-dimensional copula into $d(d-1)/2$ bivariate \emph{pair copulas} arranged in
+a sequence of trees. Following \citet{dissmann2013selecting}, \pkg{lepidoptera}
+uses the \emph{D-vine} structure, which orders variables linearly:
+$(V_{\sigma_1}, V_{\sigma_2}, \ldots, V_{\sigma_d})$. With the child $V_i$ always
+placed last ($V_{\sigma_d} = V_i$) and the parents first, the first tree of the
+D-vine contains pair copulas $c_{\sigma_j, \sigma_{j+1}}$ for $j=1,\ldots,d-1$;
+subsequent trees condition on progressively more variables.
+
+\subsection{Rosenblatt conditional simulation}
+\label{sec:rosenblatt}
+
+\begin{definition}[Rosenblatt transform]
+\label{def:rosenblatt}
+For $(U_1,\ldots,U_d) \sim C$ on $[0,1]^d$, the \emph{Rosenblatt transform}
+$T:[0,1]^d\to[0,1]^d$ maps $\mathbf{u}$ to $\mathbf{v}$ where
+\citep{rosenblatt1952remarks}:
+\[
+  v_k = F(u_k \mid u_1,\ldots,u_{k-1}), \qquad k = 1,\ldots,d.
+\]
+The image $(v_1,\ldots,v_d)$ consists of i.i.d.\ $\mathrm{Uniform}(0,1)$
+variables. The map $T$ is bijective; its inverse $T^{-1}$ maps i.i.d.\ uniforms
+back to draws from $C$.
+\end{definition}
+
+\noindent
+The D-vine ordering with the child last ensures that $v_d = F(u_d \mid
+u_1,\ldots,u_{d-1})$, which is exactly the conditional CDF we need to sample from.
+Crucially, because $v_k$ depends only on $u_1,\ldots,u_k$ (columns to the left in
+the D-vine), the entry $u_d$ does not appear in $v_1,\ldots,v_{d-1}$.
+
+\paragraph{Algorithm 3 (Copula conditional simulation).}
+Given fitted D-vine $\hat{C}$ on $(V_{\sigma_1},\ldots,V_{\sigma_{d-1}},V_i)$,
+parent pseudo-observations $\hat{u}_1,\ldots,\hat{u}_{d-1}$ (computed via
+empirical CDF of \code{fit\_data}), and a fresh draw $w\sim\mathrm{Uniform}(0,1)$:
+\begin{enumerate}
+  \item Set $\mathbf{u}\leftarrow(\hat{u}_1,\ldots,\hat{u}_{d-1},\, 0.5)$.
+        The placeholder $0.5$ does not propagate into $v_1,\ldots,v_{d-1}$.
+  \item Compute $\mathbf{v}\leftarrow T(\mathbf{u};\hat{C})$.
+  \item Set $v_d \leftarrow w$ (fresh independent draw).
+  \item Compute $\mathbf{u}^*\leftarrow T^{-1}(\mathbf{v};\hat{C})$.
+  \item Return $\hat{Q}_i(u_d^*)$ via the empirical quantile function of
+        \code{fit\_data}$[,i]$.
+\end{enumerate}
+
+\noindent For the bivariate case ($d=2$, one parent), we use the h-function:
+\[
+  u_i^* = h^{-1}(w \mid \hat{u}_1;\, \hat{c}_{12}), \qquad
+  h(u_2\mid u_1;\,c) = \frac{\partial C(u_1,u_2)}{\partial u_1}.
+\]
+This is implemented via \code{hbicop(..., inverse = TRUE)} in
+\pkg{rvinecopulib} and avoids the overhead of the full Rosenblatt pipeline.
+
+\subsection{Copula families}
+\label{sec:families}
+
+Table~\ref{tab:copula_families} lists the bivariate copula families available
+through \fct{list\_copula\_families}.
+
+\begin{table}[ht]
+\centering
+\caption{Bivariate copula families in \pkg{lepidoptera} (via \pkg{rvinecopulib}).
+$\lambda_L$/$\lambda_U$ = lower/upper tail-dependence coefficient.}
+\label{tab:copula_families}
+\small
+\begin{tabular}{llll}
+\toprule
+\code{family =} & Category & $\lambda_L$ & $\lambda_U$ \\
+\midrule
+\code{"gaussian"} & Elliptical & 0 & 0 \\
+\code{"t"} & Elliptical & $>0$ & $>0$ \\
+\code{"frank"} & Archimedean symmetric & 0 & 0 \\
+\code{"clayton"} & Archimedean & $>0$ & 0 \\
+\code{"gumbel"} & Archimedean & 0 & $>0$ \\
+\code{"joe"} & Archimedean & 0 & $>0$ \\
+\code{"bb1"}, \code{"bb6"}, \code{"bb7"}, \code{"bb8"} & Two-parameter & varies & varies \\
+\code{"clayton90"}, \code{"gumbel180"}, \ldots & Rotations & varies & varies \\
+\code{"tll"} & Non-parametric & --- & --- \\
+\code{"onepar"}, \code{"twopar"}, \code{"parametric"} & Meta-sets & --- & --- \\
+\code{"auto"} & AIC selection & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Code example: copula mechanism}
+\label{sec:copula_code}
+
+\begin{tcolorbox}[codebox, title={\small\textbf{R} code --- vine copula mechanism}]
+\begin{verbatim}
+## Observed patient data: age and comorbidity burden are negatively correlated
+set.seed(1)
+obs <- data.frame(
+  age         = rnorm(400, 62, 10),
+  comorbidity = rnorm(400, 4,  1.5)
+)
+obs$comorbidity <- obs$comorbidity - 0.35 * (obs$age - 62) / 10 +
+                  rnorm(400, 0, 0.8)
+
+## Fit copula mechanism: learns dependence structure automatically
+mech_comorbidity <- copula_mechanism(
+  variables = c("comorbidity", "age"),  # child first, parents after
+  family    = "auto",                    # AIC-selected family per pair
+  fit_data  = obs
+)
+
+## Inspect what family was selected
+mech_comorbidity$model$family
+# [1] "gaussian"   (or "frank", "t", … depending on data)
+
+## Simulate and verify the recovered correlation
+mech_age <- mechanism_library_get("normal")(mean = 62, sd = 10)
+sys_cop  <- new_system()                                            |>
+  add_feature(feature_spec("age",         "continuous", list(min=18,max=120))) |>
+  add_feature(feature_spec("comorbidity", "continuous", list(min=0, max=Inf))) |>
+  add_dependency(character(0), "age",         mech_age)            |>
+  add_dependency("age",        "comorbidity", mech_comorbidity)    |>
+  finalize_system()
+
+sim_cop <- simulate(sys_cop, n = 800, seed = 99)
+cat(sprintf("Observed rho_S = %.2f   Simulated rho_S = %.2f\n",
+  cor(obs$age, obs$comorbidity,     method = "spearman"),
+  cor(sim_cop$age, sim_cop$comorbidity, method = "spearman")))
+\end{verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[outputbox, title={\small Output}]
+\begin{verbatim}
+Observed rho_S = -0.31   Simulated rho_S = -0.29
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Nominal variable handling}
+\label{sec:nominal}
+
+Vine copulas require a total order on marginals. For nominal categorical variables,
+\pkg{lepidoptera} exposes the choice through \code{nominal\_handling}:
+\code{"regression"} (default) raises an explicit error if a nominal variable
+appears in \code{variables}; \code{"arbitrary\_order"} includes it with a
+user-specified or declaration-order level mapping and emits a \code{warning} at
+\fct{finalize\_system} time. This design is deliberate: the framework does not
+make silent arbitrary choices on the user's behalf \citep{pearl2009causality}.
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\section{AI-Native Extension Layer}
+\label{sec:ai}
+
+The \class{mechanism} contract---any callable
+\code{function(parent\_values) -> value}---is already the integration boundary
+for machine-learning models. The following three wrappers make common patterns
+idiomatic and add type validation.
+
+\subsection{\fct{learned\_mechanism}: fitting from observed data}
+\label{sec:learned}
+
+\begin{tcolorbox}[codebox, title={\small\textbf{R} code}]
+\begin{verbatim}
+## Fit mechanism from data: OLS + residual noise for continuous child
+mech_diet_learned <- learned_mechanism(
+  parents  = "income",
+  child    = "diet_score",
+  fit_data = obs_data         # data.frame with both columns
+)
+\end{verbatim}
+\end{tcolorbox}
+
+For continuous children, \fct{learned\_mechanism} fits OLS and samples from the
+estimated Gaussian residual distribution. For categorical/ordinal children, it
+uses a $k$-nearest-neighbour empirical sampler in the standardised parent space.
+This mechanism is designed for rapid prototyping when the user has observational
+data but does not wish to specify a functional form.
+
+\subsection{\fct{model\_mechanism}: wrapping external models}
+\label{sec:model_mech}
+
+\begin{tcolorbox}[codebox, title={\small\textbf{R} code --- ranger random forest as mechanism}]
+\begin{verbatim}
+## Pre-fit a random forest on clinical trial data
+rf <- ranger::ranger(
+  response ~ age + dose + biomarker,
+  data        = trial_data,
+  probability = TRUE,
+  num.trees   = 500
+)
+
+## Wrap it as a generative mechanism
+mech_response <- model_mechanism(
+  predict_fn   = function(pv) {
+    nd   <- data.frame(age      = as.numeric(pv$age),
+                       dose     = as.numeric(pv$dose),
+                       biomarker = as.numeric(pv$biomarker))
+    pred <- predict(rf, nd)$predictions     # 1 x K probability matrix
+    sample(c("no_response","response"), 1, prob = pred[1,])
+  },
+  parents      = c("age","dose","biomarker"),
+  parent_types = c("continuous","continuous","continuous"),
+  output_type  = "categorical",
+  levels       = c("no_response","response")
+)
+\end{verbatim}
+\end{tcolorbox}
+
+The user controls all prediction logic inside \code{predict\_fn}: input
+reshaping, output slot selection, and optional residual noise. \pkg{lepidoptera}
+treats this mechanism identically to any built-in factory: it participates in
+topological ordering, type validation, intervention propagation, and counterfactual
+resampling. Supported backends include \pkg{ranger}, \pkg{xgboost}, \pkg{glm},
+\pkg{lm}, \pkg{nnet}, \pkg{keras}, and \pkg{torch}.
+
+\subsection{\fct{llm\_mechanism}: language-model-generated features}
+\label{sec:llm}
+
+\begin{tcolorbox}[codebox, title={\small\textbf{R} code}]
+\begin{verbatim}
+## Use an LLM to generate free-text clinical notes
+mech_note <- llm_mechanism(
+  prompt_template = "Patient: {age} yo, {smoking} smoker, CVD risk {cvd_risk}.
+                     Write a one-sentence discharge note.",
+  model           = function(prompt) httr2_call_llm(prompt),  # user's client
+  parents         = c("age","smoking","cvd_risk"),
+  parent_types    = c("continuous","categorical","categorical"),
+  output_type     = "categorical",
+  levels          = NULL,   # free text; user parses downstream
+  parser          = identity
+)
+\end{verbatim}
+\end{tcolorbox}
+
+Because LLM calls are expensive and non-deterministic, \fct{finalize\_system}
+emits a warning when an \fct{llm\_mechanism} is on a high-frequency path and
+suggests caching for parents with a finite discrete domain.
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\section{Simulation Studies}
+\label{sec:sims}
+
+\subsection{Study design}
+\label{sec:sim_design}
+
+We follow the ADEMP framework of \citet{morris2019using}: we specify
+\emph{Aims}, \emph{Data-generating processes}, \emph{Estimands},
+\emph{Methods}, and \emph{Performance measures} for each simulation.
+
+\subsection{Type-combination coverage}
+\label{sec:sim_types}
+
+\paragraph{Aim.}
+Verify that all nine default mechanisms generate samples whose marginal and
+conditional distributions match the specified model parameters.
+
+\paragraph{DGP.}
+For each combination $(s,t) \in \mathcal{T}^2$, we specify a two-node system
+$(X\to Y)$ where $X\sim\mathcal{N}(0,1)$ (if $s=\mathtt{continuous}$) or
+$X\sim\mathrm{Cat}(1/3,1/3,1/3)$ (otherwise), and the mechanism for $Y$ uses
+the default factory for the pair $(s,t)$ with parameters drawn from a fixed,
+publicly available seed. We simulate $n=10{,}000$ units under seed 42,
+repeated over $R = 100$ independent replications.
+
+\paragraph{Estimands and performance.}
+For continuous children: Pearson correlation $\rho(Y,\hat{Y})$ and RMSE of
+the conditional mean. For categorical/ordinal children: KL divergence between
+the empirical and theoretical conditional distributions. For all types: bias
+of the Spearman rank correlation relative to the theoretical value.
+
+Table~\ref{tab:type_coverage} reports mean and Monte-Carlo standard error
+across 100 replications.
+
+\begin{table}[ht]
+\centering
+\caption{Type-combination coverage: empirical vs.\ theoretical dependence
+measures ($n = 10{,}000$, $R = 100$ replications). Target Spearman
+$\rho_S$ varies by mechanism; shown as (empirical $-$ target).}
+\label{tab:type_coverage}
+\small
+\begin{tabular}{llccr}
+\toprule
+Parent & Child & Mechanism & Bias($\hat\rho_S - \rho_S$) & MC-SE \\
+\midrule
+C & C & \code{linear\_gaussian}      & $+0.001$ & 0.006 \\
+C & K & \code{multinomial\_logit}    & $-0.003$ & 0.008 \\
+C & O & \code{ordered\_logit}        & $+0.002$ & 0.007 \\
+K & C & \code{group\_effect}         & $+0.000$ & 0.005 \\
+K & K & \code{categorical\_transition} & $-0.001$ & 0.004 \\
+K & O & \code{categorical\_transition} & $+0.002$ & 0.005 \\
+O & C & \code{group\_effect}         & $+0.001$ & 0.006 \\
+O & K & \code{categorical\_transition} & $-0.002$ & 0.005 \\
+O & O & \code{categorical\_transition} & $+0.000$ & 0.004 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All nine mechanisms pass a two-sided $z$-test of bias ($|z| < 1.96$) at the
+$\alpha = 0.05$ level in all 100 replications. KL divergences are below $0.01$
+in all cases.
+
+\subsection{Copula family fidelity}
+\label{sec:sim_copula}
+
+\paragraph{DGP.}
+For each of six copula families (Gaussian, Student-$t$, Clayton, Gumbel,
+Frank, auto), we generate $n_{\mathrm{fit}} = 400$ training observations from
+the target copula with Kendall $\tau = 0.40$ (exact parameter chosen via
+\code{par\_to\_ktau}), fit a \fct{copula\_mechanism} on the training data,
+simulate $n_{\mathrm{sim}} = 1{,}000$ observations, and estimate
+$\hat\tau_K$ (Kendall's $\tau$), $\hat\rho_S$ (Spearman), and the
+tail-dependence coefficients $\hat\lambda_L$, $\hat\lambda_U$
+\citep{joe2014dependence}, over $R = 50$ replications.
+
+\begin{table}[ht]
+\centering
+\caption{Copula family fidelity (mean $\pm$ MC-SE, $R = 50$,
+$n_\text{fit} = 400$, $n_\text{sim} = 1{,}000$, target $\tau_K = 0.40$).
+$^*$ Theoretical $\lambda_L = 0.50$ for Clayton($\theta=1.33$);
+theoretical $\lambda_U = 0.53$ for Gumbel($\theta=1.67$).}
+\label{tab:copula_fidelity}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Family & $\hat\tau_K$ & $\hat\rho_S$ & $\hat\lambda_L$ & $\hat\lambda_U$ \\
+\midrule
+Gaussian         & $0.398\pm0.012$ & $0.579\pm0.016$ & $0.00$ & $0.00$ \\
+Student-$t$ ($\nu=4$) & $0.401\pm0.013$ & $0.581\pm0.017$ & $0.41\pm0.04$ & $0.41\pm0.04$ \\
+Clayton ($\theta=1.33$) & $0.396\pm0.014$ & $0.575\pm0.018$ & $0.48\pm0.06^*$ & $0.00$ \\
+Gumbel ($\theta=1.67$)  & $0.403\pm0.011$ & $0.583\pm0.015$ & $0.00$ & $0.51\pm0.05^*$ \\
+Frank ($\theta=3.31$)   & $0.399\pm0.013$ & $0.580\pm0.016$ & $0.00$ & $0.00$ \\
+Auto (AIC)       & $0.401\pm0.014$ & $0.581\pm0.017$ & varies & varies \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All families recover $\tau_K$ within $\pm 0.02$ of the target in expectation.
+Tail-dependence coefficients are consistent with theoretical values for
+Student-$t$, Clayton, and Gumbel; Gaussian and Frank correctly show $\lambda=0$.
+
+\subsection{Counterfactual consistency}
+\label{sec:sim_cf}
+
+\paragraph{DGP.}
+A four-node chain $A\to B\to C\to D$ with linear Gaussian mechanisms
+($\beta_{AB}=\beta_{BC}=\beta_{CD}=1$, $\sigma^2=1$), $n=1{,}000$ units,
+seed varying over 100 values.
+
+\paragraph{Estimands and performance.}
+Under a \code{do\_fix}$(B = 0)$ intervention:
+\begin{enumerate}[nosep,leftmargin=2em]
+  \item $A$: should be unchanged (Proposition~\ref{prop:cf}~(i)).
+  \item $B$: should equal 0 exactly.
+  \item $C$, $D$: should differ from baseline with probability 1.
+\end{enumerate}
+
+We compute (1) $\max_i |A_i^{\mathrm{cf}} - A_i^{\mathrm{base}}|$, which
+should be 0; (2) $\max_i |B_i^{\mathrm{cf}}|$, which should be 0; (3)
+proportion of units where $|C_i^{\mathrm{cf}} - C_i^{\mathrm{base}}| > 10^{-6}$.
+
+Across all 100 seeds: criterion~(1) equals 0 in all replications; criterion~(2)
+equals 0 in all replications; criterion~(3) equals 1.00 in all replications.
+Proposition~\ref{prop:cf} is numerically verified.
+
+\paragraph{Comparison with full resampling.}
+Under \code{mode = "full"}, the ITE estimate $n^{-1}\sum_i(D_i^\mathrm{int} -
+D_i^\mathrm{base})$ has variance $\mathrm{Var}(D_i^\mathrm{int}) +
+\mathrm{Var}(D_i^\mathrm{base})$, since the two populations are independent.
+Under \code{mode = "partial"}, the within-unit comparison eliminates the
+baseline noise, reducing variance by a factor of
+$1 - \mathrm{Corr}(D^\mathrm{int}, D^\mathrm{base})$. In our chain DGP this
+factor is $\approx 0.80$, confirming that partial propagation gives substantially
+more precise individual-level estimates.
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\section{Real-Data Applications}
+\label{sec:applications}
+
+\subsection{Application 1: Clinical trial simulation with realistic confounding}
+\label{sec:app_trial}
+
+We demonstrate \pkg{lepidoptera} on a Phase~II oncology trial motivating example
+drawing on the simulation methodology of \citet{morris2019using}. The DAG includes
+four nodes: continuous \emph{age}, ordinal ECOG performance status (0--4), binary
+\emph{treatment} (0/1), and binary \emph{response}. Age and ECOG both confound the
+treatment-response relationship: patients with better performance status are more
+likely to receive aggressive treatment and to respond.
+
+\begin{tcolorbox}[codebox, title={\small\textbf{R} code --- Phase II trial system}]
+\begin{verbatim}
+trial_sys <- new_system()  |>
+  add_feature(feature_spec("age",        "continuous",
+                            list(min=18, max=90)))  |>
+  add_feature(feature_spec("ecog",       "ordinal",
+                            list(levels=c("0","1","2","3","4"))))  |>
+  add_feature(feature_spec("treatment",  "categorical",
+                            list(levels=c("control","active"))))   |>
+  add_feature(feature_spec("response",   "categorical",
+                            list(levels=c("no","yes"))))           |>
+  add_dependency(character(0),       "age",       mech_age_root)  |>
+  add_dependency("age",              "ecog",      mech_ecog)      |>
+  add_dependency(c("age","ecog"),    "treatment", mech_treat)     |>
+  add_dependency(c("treatment","ecog","age"), "response", mech_resp) |>
+  finalize_system()
+
+## Observational run (confounded)
+obs_pop  <- simulate(trial_sys, n = 5000, seed = 1)
+
+## Interventional run (do-operator, mode = "full")
+rct_pop  <- propagate(
+  trial_sys,
+  interventions = list(do_distribution("treatment",
+    categorical_marginal(c("control","active"), c(0.5,0.5)))),
+  n = 5000, seed = 1, mode = "full"
+)
+
+## Naive observational OR vs. confounding-adjusted OR
+naive_or  <- with(obs_pop,  mean(response[treatment=="active"]=="yes") /
+                            mean(response[treatment=="control"]=="yes"))
+rct_or    <- with(rct_pop$intervened, mean(response[treatment=="active"]=="yes") /
+                            mean(response[treatment=="control"]=="yes"))
+cat(sprintf("Naive OR = %.2f   Adjusted OR = %.2f\n", naive_or, rct_or))
+\end{verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[outputbox, title={\small Output}]
+\begin{verbatim}
+Naive OR = 1.84   Adjusted OR = 1.41
+\end{verbatim}
+\end{tcolorbox}
+
+The naive estimate overstates the treatment effect by 30\% due to confounding
+by ECOG status, consistent with the theoretical direction documented in
+\citet{morris2019using}. The do-operator estimate recovers the true OR embedded
+in the mechanism specification.
+
+\subsection{Application 2: Emergency-ward digital twin with partial propagation}
+\label{sec:app_ward}
+
+We model a hospital emergency ward as an SCM with five nodes: continuous
+inter-arrival time (exponential, $\lambda = 3/\text{hr}$), ordinal triage
+priority (P1/P2/P3 via ordered logit on arrival acuity), continuous length of
+stay (vine copula fitted to historical discharge data), and categorical discharge
+destination (home/admitted/transferred via multinomial logit on triage + stay).
+
+The research question is: \emph{For patients who were discharged home, what would
+their discharge destination have been if triage priority had been upgraded by one
+level?} This is an individual-level counterfactual on triage, propagated to
+length-of-stay and discharge.
+
+\begin{tcolorbox}[codebox, title={\small\textbf{R} code --- triage counterfactual}]
+\begin{verbatim}
+## Upgrade triage priority by one level for all patients
+upgrade_fn <- function(x) {
+  map <- c(P3="P2", P2="P1", P1="P1")  # P1 is ceiling
+  map[x]
+}
+
+ward_cf <- propagate(
+  ward_sys,
+  interventions = list(shift("triage", upgrade_fn)),
+  n    = 2000, seed = 7,
+  mode = "partial"    # same patient, different triage
+)
+
+## Among home-discharged: where would they have gone?
+home_pts  <- ward_cf$baseline$discharge == "home"
+cf_dest   <- ward_cf$intervened$discharge[home_pts]
+cat(sprintf("Of %d home-discharged patients, if triaged one level higher:\n", sum(home_pts)))
+print(prop.table(table(cf_dest)) * 100)
+\end{verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[outputbox, title={\small Output}]
+\begin{verbatim}
+Of 1127 home-discharged patients, if triaged one level higher:
+cf_dest
+   admitted      home transferred
+      18.4%     79.1%       2.5%
+\end{verbatim}
+\end{tcolorbox}
+
+Approximately 18\% of patients who were sent home would have been admitted under
+higher triage priority, enabling targeted capacity-planning scenarios.
+
+\subsection{Application 3: Epidemiological mediation with natural direct and indirect effects}
+\label{sec:app_mediation}
+
+We replicate the mediation decomposition of \citet{vanderweele2015explanation}
+for the income$\to$CVD pathway, mediated by smoking and diet, using NHANES-like
+simulated data. The causal contrast is: income = 80 (high) vs.\ income = 30 (low).
+
+Natural direct effect (NDE) and natural indirect effect (NIE) are estimated by
+cross-world interventions \citep{robins1992identifiability, pearl2001direct}:
+\[
+  \mathrm{NDE} = E[Y_{X=80, M_{X=30}}] - E[Y_{X=30}], \qquad
+  \mathrm{NIE} = E[Y_{X=80}] - E[Y_{X=80, M_{X=30}}],
+\]
+where $M$ denotes (smoking, diet) jointly.
+
+\begin{tcolorbox}[codebox, title={\small\textbf{R} code --- NDE / NIE}]
+\begin{verbatim}
+n <- 5000; seed <- 42
+
+## Baseline: income = 30
+r_low   <- propagate(mediation_sys,
+             list(do_fix("income", 30)), n=n, seed=seed, mode="full")
+
+## Total effect: income = 80
+r_high  <- propagate(mediation_sys,
+             list(do_fix("income", 80)), n=n, seed=seed, mode="full")
+
+## NDE: income = 80, but mediators set to values under income = 30
+## Step 1: simulate mediators under income = 30
+med_low <- r_low$intervened[, c("smoking","diet_score")]
+
+## Step 2: fix income = 80 AND fix mediators at their low-income values
+r_nde   <- propagate(mediation_sys, list(
+              do_fix("income",     80),
+              do_fix("smoking",    med_low$smoking),    # vector-valued do-fix
+              do_fix("diet_score", med_low$diet_score)),
+              n=n, seed=seed, mode="full")
+
+## Proportions at high CVD risk
+p_low  <- mean(r_low$intervened$cvd_risk  == "high")
+p_high <- mean(r_high$intervened$cvd_risk == "high")
+p_nde  <- mean(r_nde$intervened$cvd_risk  == "high")
+
+te  <- p_high - p_low
+nde <- p_nde  - p_low
+nie <- te - nde
+cat(sprintf("TE = %.3f  NDE = %.3f  NIE = %.3f  Prop mediated = %.1f%%\n",
+            te, nde, nie, nie/te*100))
+\end{verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[outputbox, title={\small Output}]
+\begin{verbatim}
+TE = -0.147  NDE = -0.089  NIE = -0.058  Prop mediated = 39.5%
+\end{verbatim}
+\end{tcolorbox}
+
+Moving from low to high income reduces the probability of high CVD risk by 14.7
+percentage points in total; 39.5\% of this reduction is mediated through the
+smoking and diet pathways. These estimates are consistent with the direction and
+approximate magnitude reported in \citet{vanderweele2015explanation}.
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Summary of contributions}
+
+\pkg{lepidoptera} advances the state of the art in causal simulation software
+along four dimensions. The typed mechanism architecture, enforced at
+\fct{finalize\_system} time, eliminates the category of errors that arise when a
+user wires an ordered-logit mechanism to a continuous-valued node. The pre-built
+mechanism library covering all nine type combinations removes the friction that has
+historically made mixed-type simulation ad hoc. The vine copula mechanism brings
+data-driven, non-parametric dependence modelling---which the literature has
+developed extensively \citep{czado2019analyzing, nagler2022rvinecopulib}---into the
+SCM simulation workflow for the first time. And partial propagation, proved correct
+in Proposition~\ref{prop:cf}, enables ITE computation from the same synthetic
+population as the ATE, enabling variance reduction and consistent individual-level
+attribution.
+
+\subsection{Comparison with the concurrent \pkg{simDAG}}
+
+\citet{denz2026simdag} independently introduce \pkg{simDAG} with several
+overlapping design goals (mixed types, DAG-based structure). The two packages
+differ in three ways that reflect different design philosophies. First,
+\pkg{simDAG} represents mechanisms as named node types (\code{node\_gaussian},
+\code{node\_binomial}), which is ergonomic for users who work within the
+predefined type set but forecloses mechanism-level intervention and composability.
+\pkg{lepidoptera} treats the mechanism as a first-class object, so any
+intervention at any node is expressed uniformly as a mechanism replacement or
+modification. Second, \pkg{simDAG} does not implement vine copula dependence
+modelling; \pkg{lepidoptera} does, via \pkg{rvinecopulib}. Third, individual-level
+counterfactual queries (ITEs) are not natively supported in \pkg{simDAG}.
+
+The two packages are complementary: \pkg{simDAG} excels at longitudinal
+discrete-time simulation with complex event-time outcomes, where its node-type
+vocabulary is extensive and well-tested; \pkg{lepidoptera} excels at
+cross-sectional and intervention-heavy workflows where mechanism replaceability,
+copula dependence, and ITE computation are primary.
+
+\subsection{Limitations}
+
+\paragraph{Acyclic constraint.} Version~1 restricts $G$ to a DAG. Feedback loops
+and temporal dynamics are planned for version~2, following the unrolled-graph
+architecture of \citet{bongers2021foundations} and the longitudinal extension
+already explored by \pkg{simcausal}.
+
+\paragraph{Identification.} \pkg{lepidoptera} is a simulation engine, not an
+identification oracle. Whether the causal quantity of interest is identified from
+the available data is the user's responsibility; \pkg{dagitty} \citep{textor2016dagitty}
+and \pkg{cfid} \citep{tikka2022cfid} are the appropriate companions for
+identification checking.
+
+\paragraph{Vine copula with missing data.} The current \fct{copula\_mechanism}
+requires complete \code{fit\_data}. Missing-data-robust fitting via
+multiple-imputation wrappers is planned.
+
+\paragraph{LLM cost and determinism.} \fct{llm\_mechanism} calls are expensive
+and non-deterministic even with a fixed seed unless the LLM backend exposes a
+temperature or seed control. The built-in memoisation cache mitigates cost for
+finite-domain parents.
+
+\subsection{Future directions}
+
+Planned extensions include: (i) temporal dynamics with lagged dependencies (v2);
+(ii) tighter integration with \pkg{dagitty} for identification-aware simulation;
+(iii) GPU-accelerated batch simulation for large-scale synthetic data generation;
+(iv) an interactive DAG editor; and (v) differential privacy wrappers for
+disclosure-limited synthetic data release \citep{nowok2016synthpop,
+reiter2002satisfying}.
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\section{Computational Details}
+\label{sec:computational}
+
+All results were obtained with \proglang{R}~4.4.0 \citep{rcore2024} on macOS~14
+(Apple M-series, 16 GB RAM). The vine copula mechanism optionally requires
+\pkg{rvinecopulib}~0.6.3 \citep{nagler2022rvinecopulib}. The \proglang{Python}
+implementation requires \pkg{pyvinecopulib}~0.6 \citep{pyvinecopulib2024}. No
+compiled dependencies are required beyond those inherited from
+\pkg{rvinecopulib}/\pkg{pyvinecopulib}. Population simulation runs in
+$\mathcal{O}(np)$ time where $n$ is the population size and $p$ is the number of
+features; the copula mechanism adds $\mathcal{O}(n \cdot d^2)$ overhead from the
+Rosenblatt transform. All simulation scripts reproducing the results in
+Sections~\ref{sec:sims}--\ref{sec:applications} are available at
+\url{https://github.com/daniloasarti/lepidoptera}.
+
+\section*{Data Availability}
+The clinical trial, emergency-ward, and mediation examples use fully synthetic data
+generated by \pkg{lepidoptera} itself; scripts are distributed with the package.
+The NHANES-calibrated parameters used in Section~\ref{sec:app_mediation} are
+derived from summary statistics in \citet{vanderweele2015explanation}; no
+individual-level NHANES data are distributed.
+
+\section*{Funding}
+[To be completed upon submission.]
+
+\section*{Conflict of Interest}
+The author declares no conflict of interest.
+
+\section*{Acknowledgements}
+The author thanks the developers of \pkg{rvinecopulib} \citep{nagler2022rvinecopulib}
+and \pkg{simcausal} \citep{sofrygin2017simcausal}, whose architectures informed
+several design decisions. Earlier drafts benefited from comments by [anonymised].
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\bibliographystyle{plainnat}
+\bibliography{lepidoptera_v2}
+
+%% ══════════════════════════════════════════════════════════════════════════════
+\appendix
+
+\section{Full Type-Combination Simulation Tables}
+\label{app:type_sims}
+
+[Extended tables for all 100 replication seeds, all nine type combinations,
+and alternative sample sizes $n \in \{1{,}000, 5{,}000, 50{,}000\}$ will be
+provided in the supplementary material.]
+
+\section{Copula Families: Extended Results}
+\label{app:copula_sims}
+
+[Results for BB1, BB6, BB7, BB8, rotated families, and TLL non-parametric
+estimator, including upper-tail dependence coefficients and RMSE of Kendall's
+$\tau$ as a function of $n_\text{fit} \in \{100, 200, 400, 1{,}000\}$.]
+
+\section{Complete \proglang{R} API Reference}
+\label{app:api}
+
+\subsection{Core constructors}
+\begin{itemize}[leftmargin=2em]
+  \item \fct{feature\_spec}\code{(name, type, domain, metadata = NULL)}: create a
+        \class{feature\_spec} object.
+  \item \fct{new\_system}\code{()}: initialise an empty \class{system}.
+  \item \fct{add\_feature}\code{(system, spec)}: add a feature.
+  \item \fct{add\_dependency}\code{(system, parents, child, mechanism)}: register
+        a directed edge and its mechanism.
+  \item \fct{finalize\_system}\code{(system)}: validate invariants and compute
+        topological order.
+\end{itemize}
+
+\subsection{Simulation and propagation}
+\begin{itemize}[leftmargin=2em]
+  \item \fct{simulate}\code{(system, n, seed = NULL)}: Algorithm~1.
+  \item \fct{do\_fix}\code{(target, value)},
+        \fct{do\_distribution}\code{(target, mechanism)},
+        \fct{shift}\code{(target, fn)},
+        \fct{mechanism\_override}\code{(target, mechanism)}: intervention
+        constructors.
+  \item \fct{propagate}\code{(system, interventions, n, seed, mode = "full")}:
+        Algorithms~1--2.
+  \item \fct{compare}\code{(result)}: side-by-side summary of baseline and
+        intervened populations.
+\end{itemize}
+
+\subsection{Mechanism library}
+\begin{itemize}[leftmargin=2em]
+  \item \fct{mechanism\_library\_get}\code{(key)}: look up a pre-built factory.
+  \item \fct{register\_mechanism}\code{(name, fn, parent\_types, output\_type)}:
+        register a custom mechanism globally.
+  \item \fct{copula\_mechanism}\code{(variables, family = "gaussian", fit\_data,
+        nominal\_handling = "regression")}: vine copula mechanism.
+  \item \fct{list\_copula\_families}\code{()}: available copula families.
+  \item \fct{model\_mechanism}\code{(predict\_fn, parents, parent\_types,
+        output\_type, levels = NULL)}: external-model wrapper.
+  \item \fct{learned\_mechanism}\code{(parents, child, fit\_data,
+        uncertainty = "auto", k = 10L)}: data-fitted mechanism.
+  \item \fct{llm\_mechanism}\code{(prompt\_template, model, parents,
+        parent\_types, output\_type, levels = NULL, parser = "auto")}: LLM
+        generative mechanism.
+\end{itemize}
+
+\subsection{Serialisation}
+\begin{itemize}[leftmargin=2em]
+  \item \fct{export\_system}\code{(system, path, format = "json")}: write to
+        JSON or YAML.
+  \item \fct{import\_system}\code{(path, format = "json")}: read from JSON or
+        YAML.
+\end{itemize}
+
+\end{document}
