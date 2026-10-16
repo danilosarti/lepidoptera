@@ -1,388 +1,388 @@
-# lepidoptera — Especificação do Package
+# lepidoptera — Package Specification
 
-Versão do documento: 0.1 (rascunho fundacional)
-Status: proposta para validação — sem código implementado ainda
-Implementações previstas: R e Python, em paralelo, com paridade de API
-
----
-
-## 1. Visão geral
-
-`lepidoptera` é um motor de simulação genérico e versátil. Ele não modela nenhum domínio específico — não sabe nada sobre epidemiologia, economia, biologia, etc. O que ele sabe fazer é:
-
-1. Representar um **sistema** como um conjunto de **features** (variáveis) com tipos heterogêneos (contínuas, categóricas, ordinais).
-2. Representar **dependências a priori** entre essas features como um grafo.
-3. Definir, para cada dependência, um **mecanismo** (função/regra) que descreve como o valor de uma feature é gerado a partir dos valores de suas features-pais.
-4. Gerar (simular) populações de unidades a partir desse sistema.
-5. Aplicar **intervenções** sobre uma ou mais features e **propagar** o efeito dessas intervenções pela estrutura de dependências, recalculando tudo que é afetado a jusante (downstream).
-
-A ideia de longo prazo é que `lepidoptera` seja a camada de infraestrutura ("backstage") sobre a qual soluções de simulação específicas de domínio são construídas depois — sem precisar reinventar a parte de representação de dependências, tipos mistos e propagação de intervenções a cada novo projeto.
-
-### 1.1 Princípios de design
-
-- **Agnóstico de domínio.** Nada no core sabe o que uma feature "significa". Semântica de domínio é responsabilidade de quem usa o package por cima.
-- **Tipos mistos como cidadãos de primeira classe.** Contínuo, categórico e ordinal devem ser suportados em qualquer combinação pai→filho, sem tratamento especial em código de usuário.
-- **Estrutura explícita, mecanismo explícito.** O grafo de dependências e as regras de geração de valores são objetos de primeira classe, inspecionáveis e serializáveis — não funções anônimas escondidas.
-- **Intervenção como operação central.** O sistema não serve só para "rodar uma simulação", mas para perguntar "o que muda se eu intervier aqui?" — isso precisa ser barato e bem definido.
-- **Paridade R/Python.** As duas implementações compartilham o mesmo modelo conceitual, os mesmos nomes de função (adaptados à convenção idiomática de cada linguagem) e devem produzir resultados equivalentes dado o mesmo seed.
-- **v1 simples, v2 extensível.** A primeira versão assume grafo acíclico (DAG) com propagação one-shot. A arquitetura é desenhada para depois suportar dinâmica temporal e feedback loops sem quebrar a API de v1.
-
-### 1.2 Fora de escopo (por ora)
-
-- Inferência causal a partir de dados observacionais (descoberta de estrutura). `lepidoptera` assume que a estrutura de dependência é fornecida pelo usuário, não a descobre.
-- Otimização/calibração automática de parâmetros dos mecanismos.
-- Interface gráfica. O foco é a biblioteca/engine; visualização é tratada como utilitário secundário (ex.: plot do grafo), não como produto.
-- Simulação distribuída/paralela em larga escala (pode vir depois, não é requisito de v1).
+Document version: 0.1 (foundational draft)  
+Status: proposal for validation — no code implemented yet  
+Planned implementations: R and Python, in parallel, with API parity
 
 ---
 
-## 2. Conceitos centrais
+## 1. Overview
 
-| Conceito | Definição |
+`lepidoptera` is a generic, domain-agnostic simulation engine. It models no specific domain — it knows nothing about epidemiology, economics, biology, etc. What it does:
+
+1. Represent a **system** as a set of **features** (variables) with heterogeneous types (continuous, categorical, ordinal).
+2. Represent **a priori dependencies** between those features as a graph.
+3. Define, for each dependency, a **mechanism** (function/rule) describing how a feature's value is generated from its parent features' values.
+4. Generate (simulate) populations of units from that system.
+5. Apply **interventions** on one or more features and **propagate** their effects through the dependency structure, recomputing everything affected downstream.
+
+The long-term vision is that `lepidoptera` serves as the infrastructure layer ("backstage") on which domain-specific simulation solutions are built — without reinventing dependency representation, mixed types, and intervention propagation for every new project.
+
+### 1.1 Design principles
+
+- **Domain-agnostic.** Nothing in the core knows what a feature "means". Domain semantics are the responsibility of whoever uses the package on top.
+- **Mixed types as first-class citizens.** Continuous, categorical, and ordinal must be supported in any parent→child combination, with no special handling in user code.
+- **Explicit structure, explicit mechanism.** The dependency graph and value-generation rules are first-class objects — inspectable and serialisable — not anonymous functions hidden away.
+- **Intervention as a central operation.** The system is not just for "running a simulation", but for asking "what changes if I intervene here?" — this must be cheap and well-defined.
+- **R/Python parity.** Both implementations share the same conceptual model, the same function names (adapted to each language's idiomatic conventions), and must produce equivalent results given the same seed.
+- **v1 simple, v2 extensible.** The first version assumes an acyclic graph (DAG) with one-shot propagation. The architecture is designed to later support temporal dynamics and feedback loops without breaking the v1 API.
+
+### 1.2 Out of scope (for now)
+
+- Causal inference from observational data (structure discovery). `lepidoptera` assumes the dependency structure is provided by the user, not discovered.
+- Automatic optimisation/calibration of mechanism parameters.
+- Graphical user interface. The focus is the library/engine; visualisation is treated as a secondary utility (e.g. graph plot), not as a product.
+- Distributed/parallel large-scale simulation (may come later, not a v1 requirement).
+
+---
+
+## 2. Core concepts
+
+| Concept | Definition |
 |---|---|
-| **Feature** | Uma variável do sistema. Tem nome, tipo (contínua, categórica ou ordinal) e um domínio. |
-| **Domínio** | Para contínua: intervalo (com possíveis limites). Para categórica: conjunto finito de níveis sem ordem. Para ordinal: conjunto finito de níveis com ordem. |
-| **Grafo de dependência** | Um grafo dirigido cujos nós são features. Uma aresta `A → B` significa "B depende de A" (A é pai de B). v1: exige-se que o grafo seja acíclico (DAG). |
-| **Mecanismo** | A regra associada a uma feature que, dados os valores correntes de seus pais (e possivelmente um termo de ruído), determina o valor (ou a distribuição do valor) dessa feature. Features sem pais (raízes) têm um mecanismo marginal (uma distribuição base, sem inputs). |
-| **Sistema (System/Model)** | O conjunto completo: features + grafo de dependência + mecanismos associados a cada feature. É a "especificação" simulável. |
-| **Unidade** | Uma realização simulada do sistema — um vetor com um valor para cada feature, gerado seguindo a ordem topológica do grafo. |
-| **População** | Um conjunto de N unidades simuladas independentemente a partir do mesmo sistema. Representada como uma tabela (data frame): linhas = unidades, colunas = features. |
-| **Intervenção** | Uma modificação aplicada a uma ou mais features do sistema (ex.: fixar um valor, deslocar uma distribuição, substituir um mecanismo) antes de gerar/regenerar a população. |
-| **Propagação** | O processo de recalcular, em ordem topológica, todas as features afetadas direta ou indiretamente por uma intervenção, mantendo intactas as features não afetadas (ou recalculando-as de forma consistente quando há resampling completo). |
-| **Resultado de simulação** | O artefato comparável: população baseline vs. população pós-intervenção, mais metadados (quais features foram alteradas, em que ordem a propagação ocorreu). |
+| **Feature** | A variable in the system. Has a name, type (continuous, categorical, or ordinal), and a domain. |
+| **Domain** | For continuous: interval (with possible infinite bounds). For categorical: finite set of unordered levels. For ordinal: finite set of ordered levels. |
+| **Dependency graph** | A directed graph whose nodes are features. An edge `A → B` means "B depends on A" (A is a parent of B). v1: the graph must be acyclic (DAG). |
+| **Mechanism** | The generative rule associated with a feature that, given the current values of its parents (and possibly a noise term), determines the value (or value distribution) of that feature. Root features (no parents) have a marginal mechanism (a base distribution, no inputs). |
+| **System** | The complete specification: features + dependency graph + mechanisms for each feature. The simulatable "specification". |
+| **Unit** | A single simulated realisation of the system — a vector with one value per feature, generated following the graph's topological order. |
+| **Population** | A set of N units simulated independently from the same system. Represented as a table (data frame): rows = units, columns = features. |
+| **Intervention** | A modification applied to one or more features of the system (e.g. fixing a value, shifting a distribution, replacing a mechanism) before generating/regenerating a population. |
+| **Propagation** | The process of recomputing, in topological order, all features directly or indirectly affected by an intervention, leaving unaffected features intact (or recomputing them consistently when full resampling is used). |
+| **Simulation result** | The comparable artefact: baseline population vs. post-intervention population, plus metadata (which features were changed, in what order propagation occurred). |
 
 ---
 
-## 3. Modelo de dados
+## 3. Data model
 
-Esta seção descreve as entidades de forma language-agnostic. A seção 7 mapeia cada entidade para classes/funções concretas em R e Python.
+This section describes entities in a language-agnostic way. Section 7 maps each entity to concrete classes/functions in R and Python.
 
 ### 3.1 `FeatureType`
 
-Enumeração fechada: `continuous`, `categorical`, `ordinal`.
+Closed enumeration: `continuous`, `categorical`, `ordinal`.
 
 ### 3.2 `FeatureSpec`
 
-Campos:
+Fields:
 
-- `name: string` — identificador único dentro do sistema.
+- `name: string` — unique identifier within the system.
 - `type: FeatureType`
-- `domain`: depende do tipo —
-  - contínua: `{min, max}` (podem ser infinitos)
-  - categórica: `{levels: [string, ...]}` (sem ordem)
-  - ordinal: `{levels: [string, ...]}` (a ordem da lista define a ordem da escala)
-- `metadata: dict` opcional — espaço livre para anotações de quem usa o package (rótulos legíveis, unidades, descrição), nunca interpretado pelo core.
+- `domain`: depends on type —
+  - continuous: `{min, max}` (may be infinite)
+  - categorical: `{levels: [string, ...]}` (unordered)
+  - ordinal: `{levels: [string, ...]}` (list order defines scale order)
+- `metadata: dict` optional — free space for user annotations (human-readable labels, units, description), never interpreted by the core.
 
 ### 3.3 `Mechanism`
 
-Um mecanismo é a função geradora associada a uma feature. Dois tipos:
+A mechanism is the generative function associated with a feature. Two types:
 
-- **Marginal mechanism** (para features-raiz, sem pais): uma distribuição/regra que não recebe inputs, só um gerador de números aleatórios (RNG) e parâmetros. Ex.: Normal(μ, σ) para contínua; distribuição categórica com vetor de probabilidades; distribuição multinomial ordenada para ordinal.
-- **Conditional mechanism** (para features com ≥1 pai): uma função `f(parent_values, rng, params) -> value` (ou `-> distribuição`, da qual se amostra o valor). A assinatura recebe os valores correntes de **todos** os pais declarados na aresta, na forma de seus tipos nativos (número para contínua, string/fator para categórica e ordinal).
+- **Marginal mechanism** (for root features, no parents): a distribution/rule that takes no inputs, only an RNG and parameters. E.g.: Normal(μ, σ) for continuous; categorical distribution with probability vector; ordered multinomial distribution for ordinal.
+- **Conditional mechanism** (for features with ≥1 parent): a function `f(parent_values, rng, params) -> value` (or `-> distribution`, from which a value is sampled). The signature receives the current values of **all** declared parent features, as native types (number for continuous, string/factor for categorical and ordinal).
 
-Cada mecanismo declara explicitamente:
-- `output_type`: deve ser compatível com o tipo da feature à qual pertence.
-- `parent_types`: os tipos esperados de cada pai (usado para validação na hora de montar o sistema, não em tempo de simulação).
+Each mechanism explicitly declares:
+- `output_type`: must be compatible with the type of the feature it belongs to.
+- `parent_types`: expected types for each parent (used for validation at system assembly time, not at simulation time).
 
-O core fornece uma **biblioteca de mecanismos pré-fabricados** cobrindo as combinações de tipo mais comuns (ver seção 4), e permite que o usuário registre mecanismos customizados (uma função qualquer respeitando a assinatura).
+The core provides a **pre-built mechanism library** covering the most common type combinations (see section 4), and allows users to register custom mechanisms (any function respecting the signature).
 
 ### 3.4 `DependencyEdge`
 
-- `from: FeatureSpec.name` (pai)
-- `to: FeatureSpec.name` (filho)
+- `from: FeatureSpec.name` (parent)
+- `to: FeatureSpec.name` (child)
 
-Uma feature pode ter múltiplos pais; nesse caso, o `Mechanism` da feature filha recebe todos os valores dos pais de uma vez (não há composição implícita aresta-a-aresta — o mecanismo é por nó, não por aresta).
+A feature may have multiple parents; in that case, the child feature's `Mechanism` receives all parent values at once (there is no implicit edge-by-edge composition — the mechanism is per-node, not per-edge).
 
 ### 3.5 `System`
 
 - `features: {name -> FeatureSpec}`
 - `edges: [DependencyEdge, ...]`
-- `mechanisms: {name -> Mechanism}` — uma entrada por feature.
-- Invariantes validados na construção/finalização do sistema:
-  1. Toda feature tem exatamente um mecanismo.
-  2. O grafo induzido por `edges` é acíclico (v1).
-  3. Toda feature referenciada em uma aresta existe em `features`.
-  4. O `parent_types` de cada mecanismo condicional é consistente com os tipos reais dos pais declarados nas arestas.
-  5. Toda feature tem ao menos um caminho de geração válido (raízes têm mecanismo marginal; não-raízes têm mecanismo condicional cobrindo exatamente seus pais).
+- `mechanisms: {name -> Mechanism}` — one entry per feature.
+- Invariants validated at construction/finalisation:
+  1. Every feature has exactly one mechanism.
+  2. The graph induced by `edges` is acyclic (v1).
+  3. Every feature referenced in an edge exists in `features`.
+  4. The `parent_types` of each conditional mechanism is consistent with the actual types of the parents declared in the edges.
+  5. Every feature has at least one valid generation path (roots have a marginal mechanism; non-roots have a conditional mechanism covering exactly their parents).
 
 ### 3.6 `Intervention`
 
-- `target: feature name (ou lista de features)`
-- `kind`: um de
-  - `do_fix`: fixa a feature em um valor constante para todas as unidades (do-operator clássico), desconectando-a de seus pais.
-  - `do_distribution`: substitui o mecanismo marginal/condicional por uma nova distribuição/função, mantendo ou não a dependência dos pais.
-  - `shift`: aplica um deslocamento/transformação sobre o valor que seria gerado pelo mecanismo original (ex.: +Δ para contínua, remapeamento de níveis para categórica/ordinal), preservando a dependência dos pais.
-  - `mechanism_override`: substitui completamente o `Mechanism` de uma feature por outro, arbitrário.
-- `params`: dados específicos do tipo de intervenção (valor fixo, nova distribuição, função de shift, novo mecanismo).
+- `target: feature name (or list of features)`
+- `kind`: one of
+  - `do_fix`: fixes the feature at a constant value for all units (classic do-operator), disconnecting it from its parents.
+  - `do_distribution`: replaces the marginal/conditional mechanism with a new distribution/function, optionally preserving or dropping parent dependency.
+  - `shift`: applies a displacement/transformation to the value that would have been generated by the original mechanism (e.g. +Δ for continuous, level remapping for categorical/ordinal), preserving parent dependency.
+  - `mechanism_override`: completely replaces a feature's `Mechanism` with an arbitrary new one.
+- `params`: intervention-type-specific data (fixed value, new distribution, shift function, new mechanism).
 
-Intervenções são objetos imutáveis aplicados sobre uma cópia do sistema (nunca mutam o sistema original in-place) — isso permite comparar baseline e intervenção a partir da mesma especificação base.
+Interventions are immutable objects applied to a copy of the system (never mutating the original system in-place) — this allows comparing baseline and intervention from the same base specification.
 
 ### 3.7 `Population`
 
-Uma tabela com uma linha por unidade simulada e uma coluna por feature, mais uma coluna implícita de id de unidade. Tipagem de coluna reflete o `FeatureType` (numérica para contínua; fator/categoria para categórica e ordinal, preservando a ordem declarada no caso ordinal).
+A table with one row per simulated unit and one column per feature, plus an implicit unit-id column. Column typing reflects the `FeatureType` (numeric for continuous; factor/category for categorical and ordinal, preserving the declared order for ordinal).
 
 ### 3.8 `SimulationResult`
 
 - `baseline: Population`
-- `intervened: Population` (mesmo número de unidades e mesmo seed-base que `baseline`, para permitir comparação pareada unidade-a-unidade quando aplicável)
-- `interventions: [Intervention, ...]` aplicadas
-- `affected_features: [name, ...]` — fecho transitivo a jusante das features-alvo das intervenções, na ordem em que foram recalculadas
-- `propagation_order: [name, ...]` — ordem topológica usada
+- `intervened: Population` (same number of units and same base seed as `baseline`, enabling unit-by-unit paired comparison where applicable)
+- `interventions: [Intervention, ...]` applied
+- `affected_features: [name, ...]` — transitive downstream closure of intervention-target features, in the order they were recomputed
+- `propagation_order: [name, ...]` — topological order used
 
 ---
 
-## 4. Tipos de variável e combinações de dependência
+## 4. Variable types and dependency combinations
 
-O requisito central é: qualquer combinação tipo-do-pai → tipo-do-filho precisa ser suportável. Isso dá 9 combinações binárias (3 tipos × 3 tipos), mais o caso de múltiplos pais de tipos diferentes para um único filho.
+The central requirement: any parent-type → child-type combination must be supportable. This gives 9 binary combinations (3 types × 3 types), plus the case of multiple parents of different types for a single child.
 
-| Pai → Filho | Estratégia padrão fornecida pelo core |
+| Parent → Child | Default strategy provided by the core |
 |---|---|
-| Contínuo → Contínuo | Função paramétrica (linear, polinomial, etc.) + ruído aditivo configurável. |
-| Contínuo → Categórico | Modelo tipo regressão multinomial: contínuo é mapeado a probabilidades por nível (ex.: via função softmax sobre combinação linear dos pais). |
-| Contínuo → Ordinal | Modelo tipo regressão ordinal (logito cumulativo / proportional odds): contínuo desloca os cortes (thresholds) entre níveis ordenados. |
-| Categórico → Contínuo | Cada nível do pai associado a um efeito (média/parâmetro) diferente sobre a distribuição contínua do filho (equivalente a um "efeito de grupo"). |
-| Categórico → Categórico | Tabela de transição / matriz de probabilidades condicionais nível-a-nível. |
-| Categórico → Ordinal | Cada nível do pai categórico associado a uma distribuição diferente sobre os níveis ordenados do filho. |
-| Ordinal → Contínuo | Ordinal é tratado com seu código numérico (posição na escala) e tratado como pseudo-contínuo na função geradora, OU efeito por nível como no caso categórico → contínuo (escolha do usuário). |
-| Ordinal → Categórico | Análogo a categórico → categórico, com a opção de o usuário aproveitar a ordem (ex.: probabilidades monotônicas) se desejar. |
-| Ordinal → Ordinal | Tabela de transição respeitando (opcionalmente) monotonicidade na propagação. |
-| Múltiplos pais mistos → Filho (qualquer tipo) | O mecanismo recebe o vetor completo de valores dos pais (cada um em seu tipo nativo) e é responsabilidade do mecanismo combinar os efeitos. O core fornece um helper de "codificação de pais mistos" (dummy/one-hot para categóricas, código inteiro para ordinais, valor bruto para contínuas) para quem quiser montar uma combinação linear/aditiva genérica em vez de escrever a lógica de combinação à mão. |
+| Continuous → Continuous | Parametric function (linear, polynomial, etc.) + configurable additive noise. |
+| Continuous → Categorical | Multinomial regression-style: continuous is mapped to per-level probabilities (e.g. via softmax over a linear combination of parents). |
+| Continuous → Ordinal | Ordinal regression-style (cumulative logit / proportional odds): continuous shifts the cut-points (thresholds) between ordered levels. |
+| Categorical → Continuous | Each parent level associated with a different effect (mean/parameter) on the child's continuous distribution (equivalent to a "group effect"). |
+| Categorical → Categorical | Transition table / conditional probability matrix, level-by-level. |
+| Categorical → Ordinal | Each categorical parent level associated with a different distribution over the child's ordered levels. |
+| Ordinal → Continuous | Ordinal is treated with its numeric code (position in scale) as pseudo-continuous in the generative function, OR per-level effect as in categorical → continuous (user's choice). |
+| Ordinal → Categorical | Analogous to categorical → categorical, with the option for the user to exploit the ordering (e.g. monotonic probabilities) if desired. |
+| Ordinal → Ordinal | Transition table optionally respecting monotonicity in propagation. |
+| Multiple mixed parents → Child (any type) | The mechanism receives the full vector of parent values (each in its native type) and is the mechanism's responsibility to combine effects. The core provides a "mixed-parent encoding" helper (dummy/one-hot for categorical, integer code for ordinal, raw value for continuous) for users who want to build a generic linear/additive combination rather than writing the combination logic by hand. |
 
-Importante: o core **não obriga** o uso desses mecanismos pré-fabricados. Eles existem como conveniência (cobrem o caso comum sem o usuário ter que escrever uma função estatística do zero). Qualquer mecanismo customizado que respeite a assinatura de `Mechanism` é válido.
+Important: the core does **not** require use of these pre-built mechanisms. They exist as convenience (covering the common case without the user having to write a statistical function from scratch). Any custom mechanism respecting the `Mechanism` signature is valid.
 
-### 4.1 Mecanismo de cópula (vine copulas)
+### 4.1 Copula mechanism (vine copulas)
 
-Além das estratégias ad-hoc da tabela acima, `lepidoptera` oferece um **mecanismo de cópula** como motor de dependência de uso geral, cobrindo toda a família de cópulas fornecida pelo `rvinecopulib` sem reimplementar nada do zero.
+In addition to the ad-hoc strategies in the table above, `lepidoptera` provides a **copula mechanism** as a general-purpose dependence engine, covering the full copula family catalogue provided by `rvinecopulib` without reimplementing anything from scratch.
 
-**Quando usar.** O mecanismo de cópula modela a dependência conjunta entre um conjunto de features (um nó e seus pais) de uma vez, em vez de uma função determinística pai→filho. Dado o valor dos pais de uma unidade, o valor do filho é obtido por **amostragem condicional** dentro da vine.
+**When to use.** The copula mechanism models the joint dependence between a set of features (a node and its parents) at once, rather than a deterministic parent→child function. Given the parent values of a unit, the child value is obtained by **conditional sampling** within the vine.
 
 ---
 
-#### 4.1.1 Back-ends e roteamento de famílias
+#### 4.1.1 Back-ends and family routing
 
-`copula_mechanism()` possui dois caminhos de execução:
+`copula_mechanism()` has two execution paths:
 
-| `family =` | Back-end | Pacotes extras |
+| `family =` | Back-end | Extra packages |
 |---|---|---|
-| `"gaussian"` | Cópula Gaussiana pura em base R (correlação de Spearman via escores normais) | nenhum |
-| `"auto"` | **rvinecopulib** com seleção automática de família por AIC (todos os pares); se o pacote não estiver instalado, cai para Gaussiana silenciosamente | `rvinecopulib` (Suggests) |
-| qualquer outro valor | **rvinecopulib** com a família/conjunto especificado | `rvinecopulib` obrigatório |
+| `"gaussian"` | Pure Gaussian copula in base R (Spearman correlation via normal scores) | none |
+| `"auto"` | **rvinecopulib** with automatic per-pair AIC family selection; silently falls back to Gaussian if package is not installed | `rvinecopulib` (Suggests) |
+| any other value | **rvinecopulib** with the specified family/set | `rvinecopulib` required |
 
 ---
 
-#### 4.1.2 Famílias suportadas (rvinecopulib)
+#### 4.1.2 Supported families (rvinecopulib)
 
-`vinecopulib` cobre mais de 20 famílias bivariadas paramétricas, montadas em **vine copulas** (D-vine no caso multivariado) para dependência conjunta em qualquer dimensão.
+`rvinecopulib` covers 20+ parametric bivariate families, assembled into **vine copulas** (D-vine for the multivariate case) for joint dependence in any dimension.
 
-| Categoria | Família | `family =` |
+| Category | Family | `family =` |
 |---|---|---|
-| Gaussiana (base R) | Gaussiana | `"gaussian"` |
-| Elíptica | t de Student | `"t"` |
-| Arquimediana simétrica | Frank | `"frank"` |
-| Arquimediana (cauda inferior) | Clayton | `"clayton"` |
-| Arquimediana (cauda superior) | Gumbel, Joe | `"gumbel"`, `"joe"` |
-| Bi-paramétricas | BB1, BB6, BB7, BB8 | `"bb1"`, `"bb6"`, `"bb7"`, `"bb8"` |
-| Rotações (90°/180°/270°) | Qualquer Archimediana rotacionada | `"clayton90"`, `"gumbel180"`, … |
-| Não-paramétrica | Kernel (TLL) | `"tll"` |
-| Meta-conjuntos | Seleciona o melhor entre um grupo | `"onepar"`, `"twopar"`, `"parametric"`, `"all"` |
-| Seleção automática | Melhor família por par via AIC | `"auto"` |
+| Gaussian (base R) | Gaussian | `"gaussian"` |
+| Elliptical | Student-t | `"t"` |
+| Symmetric Archimedean | Frank | `"frank"` |
+| Archimedean (lower tail) | Clayton | `"clayton"` |
+| Archimedean (upper tail) | Gumbel, Joe | `"gumbel"`, `"joe"` |
+| Two-parameter | BB1, BB6, BB7, BB8 | `"bb1"`, `"bb6"`, `"bb7"`, `"bb8"` |
+| Rotations (90°/180°/270°) | Any rotated Archimedean | `"clayton90"`, `"gumbel180"`, … |
+| Non-parametric | Kernel (TLL) | `"tll"` |
+| Meta-sets | Selects best within a group | `"onepar"`, `"twopar"`, `"parametric"`, `"all"` |
+| Automatic selection | Best family per pair via AIC | `"auto"` |
 
-`list_copula_families()` retorna o vetor completo de nomes aceitos pela instalação corrente.
+`list_copula_families()` returns the full vector of names accepted by the current installation.
 
 ---
 
-#### 4.1.3 Simulação condicional — método Rosenblatt
+#### 4.1.3 Conditional simulation — Rosenblatt transform
 
-Para gerar `u_child | u_parents` via uma vine copula, `lepidoptera` usa a **transformada de Rosenblatt** disponível em `rvinecopulib`:
+To generate `u_child | u_parents` via a vine copula, `lepidoptera` uses the **Rosenblatt transform** available in `rvinecopulib`:
 
-**Convenção de ordenação.** As variáveis são dispostas na matriz de pseudo-observações como `c(parents..., child)` — o filho **sempre na última coluna**. Uma D-vine com a ordem `1, 2, …, d` garante que:
+**Variable ordering convention.** Variables are arranged in the pseudo-observation matrix as `c(parents..., child)` — the child **always in the last column**. A D-vine with order `1, 2, …, d` ensures:
 ```
-v[i]   = F(u_i | u_1, ..., u_{i-1})    # depende apenas das colunas à esquerda
-v[d]   = F(u_child | u_parents)        # condicional que queremos amostrar
+v[i]   = F(u_i | u_1, ..., u_{i-1})    # depends only on columns to the left
+v[d]   = F(u_child | u_parents)        # the conditional we want to sample
 ```
 
-**Algoritmo (multivariado, d ≥ 3):**
-1. Montar `u_row = [u_p1, …, u_pk, 0.5]` (placeholder `0.5` para o filho — não afeta colunas anteriores na D-vine).
+**Algorithm (multivariate, d ≥ 3):**
+1. Build `u_row = [u_p1, …, u_pk, 0.5]` (placeholder `0.5` for the child — does not affect earlier columns in the D-vine).
 2. `v_row = rosenblatt(u_row, vine_obj)`.
-3. Substituir `v_row[k+1] ← runif(1)` — sorteio fresco e independente.
+3. Replace `v_row[k+1] ← runif(1)` — fresh, independent draw.
 4. `u_new = inverse_rosenblatt(v_row, vine_obj)`.
-5. `u_child = u_new[k+1]` — marginal condicional corretamente amostrada.
+5. `u_child = u_new[k+1]` — correctly sampled conditional marginal.
 
-**Algoritmo (bivariado, d = 2):**
-Usa `hbicop(matrix(c(u_parent, v_child), 1), bicop_obj, cond_var=1, inverse=TRUE)` — inversão exata da h-função.
+**Algorithm (bivariate, d = 2):**
+Uses `hbicop(matrix(c(u_parent, v_child), 1), bicop_obj, cond_var=1, inverse=TRUE)` — exact h-function inversion.
 
-**Decodificação.** `u_child ∈ (0,1)` é convertido ao domínio original via ECDF inversa (tabela de rank-ECDF estimada em `fit_data`).
+**Decoding.** `u_child ∈ (0,1)` is converted back to the original domain via the inverse empirical CDF (rank-ECDF table estimated from `fit_data`).
 
 ---
 
-#### 4.1.4 Assinatura R
+#### 4.1.4 R signature
 
 ```r
 copula_mechanism(
   variables,                              # c(child, parent1, parent2, ...)
-  family           = "gaussian",          # ver tabela 4.1.2
-  marginals        = "auto",             # "auto" = ECDF empírica (rank-based)
+  family           = "gaussian",          # see table 4.1.2
+  marginals        = "auto",             # "auto" = empirical ECDF (rank-based)
   nominal_handling = "regression",       # "regression" | "arbitrary_order"
-  fit_data         = NULL                # data.frame com todas as colunas de variables (obrigatório em v1)
+  fit_data         = NULL                # data.frame with all variables columns (required in v1)
 )
 
-list_copula_families()                   # retorna famílias disponíveis na instalação
+list_copula_families()                   # returns families available in current installation
 ```
 
 ---
 
-#### 4.1.5 Tipos de variável e `nominal_handling`
+#### 4.1.5 Variable types and `nominal_handling`
 
-- **Contínua / Ordinal** — codificadas como `double` antes de construir as pseudo-observações.
-- **Categórica nominal** — cópulas pressupõem ordem nas margens; `nominal_handling` controla o comportamento:
-  - `"regression"` (default): erro explícito se uma nominal aparecer em `variables`.
-  - `"arbitrary_order"`: inclui a nominal com a ordem de levels como declarada, emitindo `warning`.
-
----
-
-#### 4.1.6 Dependência opcional
-
-`rvinecopulib` fica em `Suggests` (não obrigatório). Sistemas que não usam `copula_mechanism()` não precisam instalá-lo. O caminho `family = "gaussian"` roda inteiramente em base R.
+- **Continuous / Ordinal** — encoded as `double` before building pseudo-observations.
+- **Nominal categorical** — copulas assume ordering in the margins; `nominal_handling` controls behaviour:
+  - `"regression"` (default): explicit error if a nominal appears in `variables`.
+  - `"arbitrary_order"`: includes the nominal with the level order as declared, emitting a `warning`.
 
 ---
 
-## 5. Motor de simulação (v1: DAG estático)
+#### 4.1.6 Optional dependency
 
-1. **Ordenação topológica.** Ao finalizar um `System`, computa-se uma ordem topológica das features (Kahn ou DFS). Erro explícito se houver ciclo.
-2. **Geração de uma unidade.** Percorre-se a ordem topológica; para cada feature, se for raiz, amostra-se do mecanismo marginal; se tiver pais, coletam-se os valores já gerados dos pais (na mesma unidade) e aplica-se o mecanismo condicional.
-3. **Geração de uma população.** Repete-se o processo de geração de unidade N vezes, com RNG controlado por seed (cada unidade pode usar um stream de RNG derivado do seed global + índice da unidade, para reprodutibilidade e para permitir comparação pareada baseline/intervenção).
-4. **Aplicação de intervenção.** Dada uma lista de intervenções, constrói-se um `System` derivado (cópia com os mecanismos/arestas afetados substituídos conforme o `kind` da intervenção). Calcula-se o fecho transitivo a jusante das features-alvo (`affected_features`). Duas estratégias de regeneração, ambas suportadas:
-   - **Resampling completo**: gera-se uma população nova do zero a partir do `System` derivado, usando o mesmo seed-base da baseline (unidades pareadas one-to-one).
-   - **Resampling parcial (mais eficiente)**: parte-se da população baseline já gerada; mantêm-se os valores de features não afetadas; recalculam-se apenas `affected_features`, na ordem topológica, usando os valores (já fixos) dos pais não afetados e os novos valores dos pais afetados.
-5. **Resultado.** Empacota-se `SimulationResult` com baseline, intervened, lista de intervenções, `affected_features` e `propagation_order`.
-
-### 5.1 Reprodutibilidade
-
-Toda chamada de simulação aceita um seed explícito. Dado o mesmo `System`, mesmo seed e mesmo N, a população gerada é idêntica entre execuções e (na medida do possível, respeitando diferenças de RNG entre linguagens) equivalente entre as implementações R e Python — isso deve ser validado por testes de paridade (seção 9).
+`rvinecopulib` is in `Suggests` (not required). Systems that do not use `copula_mechanism()` need not install it. The `family = "gaussian"` path runs entirely in base R.
 
 ---
 
-## 6. Extensão futura: dinâmica temporal e ciclos (v2, fora do escopo de implementação imediata)
+## 5. Simulation engine (v1: static DAG)
 
-A v1 resolve sistemas estáticos. Para sistemas com feedback loops (ex.: A afeta B que afeta A de volta) ou processos que evoluem no tempo, a v2 introduz:
+1. **Topological ordering.** When finalising a `System`, a topological order of features is computed (Kahn or DFS). An explicit error is raised if a cycle is detected.
+2. **Generating a single unit.** The topological order is traversed; for each feature, if it is a root, a value is sampled from the marginal mechanism; if it has parents, the already-generated parent values (in the same unit) are collected and the conditional mechanism is applied.
+3. **Generating a population.** The unit-generation process is repeated N times, with RNG controlled by a seed (each unit may use an RNG stream derived from the global seed + unit index, for reproducibility and to enable unit-by-unit baseline/intervention comparison).
+4. **Applying an intervention.** Given a list of interventions, a derived `System` is built (a copy with the affected mechanisms/edges replaced according to each intervention's `kind`). The transitive downstream closure of target features is computed (`affected_features`). Two regeneration strategies, both supported:
+   - **Full resampling**: a new population is generated from scratch from the derived `System`, using the same base seed as the baseline (units paired one-to-one).
+   - **Partial resampling (more efficient)**: starting from the already-generated baseline population; values of unaffected features are kept; only `affected_features` are recomputed, in topological order, using the fixed values of unaffected parents and the new values of affected parents.
+5. **Result.** A `SimulationResult` is assembled with baseline, intervened, list of interventions, `affected_features`, and `propagation_order`.
 
-- **`TimeStep`**: um sistema pode ser declarado como dinâmico, no qual cada feature tem uma versão "presente" e pode depender de versões "passadas" (lagged) de si mesma ou de outras features — isso permite expressar ciclos como dependências através do tempo (A(t) depende de B(t-1), B(t) depende de A(t-1)), preservando a garantia de acausalidade dentro de um mesmo timestep.
-- **Motor de simulação iterativo**: ao invés de uma única passada topológica, simula-se T passos sequenciais, cada um sendo uma passada topológica sobre o grafo "desenrolado" (unrolled) daquele timestep.
-- **Intervenções dependentes do tempo**: uma intervenção pode ser aplicada a partir de um timestep específico (ex.: "a partir de t=5, fixe a feature X") e sua propagação se estende para os timesteps seguintes.
-- **Compatibilidade**: um `System` v1 (estático) deve ser tratável como um caso degenerado de `System` v2 com T=1 e sem dependências defasadas — a API de v1 não deve precisar mudar quando v2 for implementada.
+### 5.1 Reproducibility
 
-Esta seção é uma diretriz arquitetural, não uma especificação detalhada — será detalhada em documento próprio quando a v1 estiver estável.
-
----
-
-## 7. Arquitetura de software
-
-Camadas, da mais baixa para a mais alta:
-
-1. **Type system** — `FeatureType`, validação de domínio, codificação/decodificação de valores (ex.: categórica como string vs. código interno).
-2. **Graph engine** — representação do grafo de dependência, checagem de aciclicidade, ordenação topológica, cálculo de fecho transitivo (ancestrais/descendentes de um nó) — usado tanto para validação quanto para identificar `affected_features` em intervenções.
-3. **Mechanism library** — mecanismos pré-fabricados por combinação de tipos (seção 4), o mecanismo de cópula via `vinecopulib` (seção 4.1), e o registro de mecanismos customizados.
-4. **System builder** — API para declarar features, arestas e mecanismos, e para validar/"finalizar" um `System` (rodar os invariantes da seção 3.5).
-5. **Simulation engine** — geração de unidades/populações dado um `System` finalizado e um seed (seção 5).
-6. **Intervention engine** — construção de `System` derivado a partir de intervenções, cálculo de `affected_features`, execução do resampling completo ou parcial.
-7. **I/O / serialização** — exportar/importar um `System` (sem dados simulados) em um formato textual (JSON ou YAML) comum às duas linguagens, para que um sistema definido em Python possa, em tese, ser carregado em R (e vice-versa). Esse formato serializado é o contrato de paridade entre as duas implementações.
-8. **(Futuro) Domain extension layer** — não faz parte do core; é o espaço onde soluções específicas de domínio (epidemiologia, mercado, etc.) usam o `lepidoptera` como dependência.
+Every simulation call accepts an explicit seed. Given the same `System`, same seed, and same N, the generated population is identical across runs and (to the extent possible, respecting RNG differences between languages) equivalent across R and Python implementations — this should be validated through parity tests (section 9).
 
 ---
 
-## 8. API pública (espelhada R / Python)
+## 6. Future extension: temporal dynamics and cycles (v2, out of immediate scope)
 
-Convenção: nomes de função em `snake_case` em ambas as linguagens. Em Python, entidades como `System`, `FeatureSpec`, `Mechanism`, `Intervention` são classes. Em R, são objetos S3 (ou R6, a decidir na implementação) com construtores `new_*()` e métodos via funções genéricas — a tabela abaixo lista a função/método equivalente em cada lado, não a classe interna.
+v1 solves static systems. For systems with feedback loops (e.g. A affects B which affects A) or time-evolving processes, v2 introduces:
 
-| Operação | Python | R |
+- **`TimeStep`**: a system may be declared dynamic, where each feature has a "current" version and may depend on "past" (lagged) versions of itself or other features — this allows expressing cycles as cross-time dependencies (A(t) depends on B(t-1), B(t) depends on A(t-1)), preserving the acyclicity guarantee within any single timestep.
+- **Iterative simulation engine**: instead of a single topological pass, T sequential steps are simulated, each being a topological pass over the "unrolled" graph for that timestep.
+- **Time-dependent interventions**: an intervention may be applied from a specific timestep onward (e.g. "from t=5, fix feature X") and its propagation extends to subsequent timesteps.
+- **Compatibility**: a v1 (static) `System` must be treatable as a degenerate case of a v2 `System` with T=1 and no lagged dependencies — the v1 API should not need to change when v2 is implemented.
+
+This section is an architectural guideline, not a detailed specification — it will be detailed in a separate document once v1 is stable.
+
+---
+
+## 7. Software architecture
+
+Layers, from lowest to highest:
+
+1. **Type system** — `FeatureType`, domain validation, value encoding/decoding (e.g. categorical as string vs. internal code).
+2. **Graph engine** — dependency graph representation, acyclicity checking, topological ordering, transitive closure computation (ancestors/descendants of a node) — used both for validation and for identifying `affected_features` in interventions.
+3. **Mechanism library** — pre-built mechanisms per type combination (section 4), the copula mechanism via `rvinecopulib` (section 4.1), and custom mechanism registration.
+4. **System builder** — API for declaring features, edges, and mechanisms, and for validating/"finalising" a `System` (running the invariants from section 3.5).
+5. **Simulation engine** — unit/population generation given a finalised `System` and a seed (section 5).
+6. **Intervention engine** — building a derived `System` from interventions, computing `affected_features`, executing full or partial resampling.
+7. **I/O / serialisation** — exporting/importing a `System` (without simulated data) in a textual format (JSON or YAML) common to both languages, so that a system defined in Python can in principle be loaded in R (and vice versa). This serialised format is the parity contract between the two implementations.
+8. **(Future) Domain extension layer** — not part of the core; the space where domain-specific solutions (epidemiology, markets, etc.) use `lepidoptera` as a dependency.
+
+---
+
+## 8. Public API (mirrored R / Python)
+
+Convention: function names in `snake_case` in both languages. In Python, entities like `System`, `FeatureSpec`, `Mechanism`, `Intervention` are classes. In R, they are S3 objects (or R6, to be decided at implementation) with `new_*()` constructors and methods via generic functions — the table below lists the equivalent function/method on each side, not the internal class.
+
+| Operation | Python | R |
 |---|---|---|
-| Criar especificação de feature | `feature_spec(name, type, domain, metadata=None)` | `feature_spec(name, type, domain, metadata = NULL)` |
-| Criar sistema vazio | `System()` | `new_system()` |
-| Adicionar feature | `system.add_feature(spec)` | `add_feature(system, spec)` |
-| Adicionar dependência + mecanismo | `system.add_dependency(parents, child, mechanism)` | `add_dependency(system, parents, child, mechanism)` |
-| Registrar mecanismo customizado | `register_mechanism(name, fn, parent_types, output_type)` | `register_mechanism(name, fn, parent_types, output_type)` |
-| Buscar mecanismo pré-fabricado | `mechanism_library.get(key)` | `mechanism_library_get(key)` |
-| Mecanismo de cópula (vine) | `copula_mechanism(variables, family="auto", marginals="auto", nominal_handling="regression", fit_data=None)` | `copula_mechanism(variables, family = "auto", marginals = "auto", nominal_handling = "regression", fit_data = NULL)` |
-| Finalizar/validar sistema | `system.finalize()` | `finalize_system(system)` |
-| Simular população | `simulate(system, n, seed=None)` | `simulate(system, n, seed = NULL)` |
-| Criar intervenção (fix) | `do_fix(target, value)` | `do_fix(target, value)` |
-| Criar intervenção (distribuição) | `do_distribution(target, distribution)` | `do_distribution(target, distribution)` |
-| Criar intervenção (shift) | `shift(target, fn)` | `shift(target, fn)` |
-| Criar intervenção (override de mecanismo) | `mechanism_override(target, mechanism)` | `mechanism_override(target, mechanism)` |
-| Aplicar intervenção(ões) e propagar | `propagate(system, interventions, n=None, seed=None, mode="full"/"partial")` | `propagate(system, interventions, n = NULL, seed = NULL, mode = "full")` |
-| Comparar resultados | `compare(result)` (método de `SimulationResult`) | `compare(result)` |
-| Exportar sistema | `system.to_json(path)` / `system.to_yaml(path)` | `export_system(system, path, format = "json")` |
-| Importar sistema | `System.from_json(path)` | `import_system(path, format = "json")` |
-| Visualizar grafo | `system.plot_graph()` | `plot_graph(system)` |
+| Create feature specification | `feature_spec(name, type, domain, metadata=None)` | `feature_spec(name, type, domain, metadata = NULL)` |
+| Create empty system | `System()` | `new_system()` |
+| Add feature | `system.add_feature(spec)` | `add_feature(system, spec)` |
+| Add dependency + mechanism | `system.add_dependency(parents, child, mechanism)` | `add_dependency(system, parents, child, mechanism)` |
+| Register custom mechanism | `register_mechanism(name, fn, parent_types, output_type)` | `register_mechanism(name, fn, parent_types, output_type)` |
+| Look up pre-built mechanism | `mechanism_library.get(key)` | `mechanism_library_get(key)` |
+| Copula mechanism (vine) | `copula_mechanism(variables, family="auto", marginals="auto", nominal_handling="regression", fit_data=None)` | `copula_mechanism(variables, family = "auto", marginals = "auto", nominal_handling = "regression", fit_data = NULL)` |
+| Finalise/validate system | `system.finalize()` | `finalize_system(system)` |
+| Simulate population | `simulate(system, n, seed=None)` | `simulate(system, n, seed = NULL)` |
+| Create intervention (fix) | `do_fix(target, value)` | `do_fix(target, value)` |
+| Create intervention (distribution) | `do_distribution(target, distribution)` | `do_distribution(target, distribution)` |
+| Create intervention (shift) | `shift(target, fn)` | `shift(target, fn)` |
+| Create intervention (mechanism override) | `mechanism_override(target, mechanism)` | `mechanism_override(target, mechanism)` |
+| Apply intervention(s) and propagate | `propagate(system, interventions, n=None, seed=None, mode="full"/"partial")` | `propagate(system, interventions, n = NULL, seed = NULL, mode = "full")` |
+| Compare results | `compare(result)` (method of `SimulationResult`) | `compare(result)` |
+| Export system | `system.to_json(path)` / `system.to_yaml(path)` | `export_system(system, path, format = "json")` |
+| Import system | `System.from_json(path)` | `import_system(path, format = "json")` |
+| Visualise graph | `system.plot_graph()` | `plot_graph(system)` |
 
-Notas de paridade:
-- Toda função que aceita `seed` deve, dado o mesmo `System` serializado e o mesmo `seed`, produzir populações estatisticamente equivalentes (não necessariamente bit-idênticas, dado que os RNGs de R e Python diferem internamente — mas a especificação de distribuições e parâmetros deve ser idêntica). Bit-identidade exata entre linguagens não é objetivo; equivalência distribucional é.
-- Mensagens de erro de validação (sistema com ciclo, mecanismo com tipo incompatível, etc.) devem expressar a mesma informação estruturada nas duas linguagens (mesmo "código" de erro), ainda que o texto varie.
+Parity notes:
+- Every function accepting `seed` must, given the same serialised `System` and same `seed`, produce statistically equivalent populations (not necessarily bit-identical, given that R and Python RNGs differ internally — but the distribution specifications and parameters must be identical). Exact bit-identity across languages is not a goal; distributional equivalence is.
+- Validation error messages (system with cycle, mechanism with incompatible type, etc.) must express the same structured information in both languages (same error "code"), even if the text differs.
 
 ---
 
-## 9. Estratégia de testes e validação de paridade
+## 9. Testing strategy and parity validation
 
-- **Testes unitários por camada**, replicados em R e Python: type system, graph engine (aciclicidade, ordenação topológica, fecho transitivo), mecanismos pré-fabricados (cada combinação de tipos da seção 4), invariantes do `System`.
-- **Testes de paridade cross-language**: um conjunto de sistemas de referência, serializados em JSON, é carregado tanto em R quanto em Python; a simulação com o mesmo seed (ou um número grande de unidades, comparando momentos/distribuições agregadas) deve produzir resultados estatisticamente equivalentes dentro de uma tolerância definida.
-- **Testes de intervenção**: para cada sistema de referência, aplicar intervenções conhecidas e verificar que `affected_features` corresponde exatamente ao fecho transitivo esperado, e que features fora desse fecho permanecem idênticas entre baseline e intervened (no modo "partial").
+- **Unit tests per layer**, replicated in R and Python: type system, graph engine (acyclicity, topological ordering, transitive closure), pre-built mechanisms (each type combination from section 4), `System` invariants.
+- **Cross-language parity tests**: a set of reference systems, serialised in JSON, is loaded in both R and Python; simulation with the same seed (or a large number of units, comparing aggregated moments/distributions) must produce statistically equivalent results within a defined tolerance.
+- **Intervention tests**: for each reference system, apply known interventions and verify that `affected_features` corresponds exactly to the expected transitive closure, and that features outside that closure are identical between baseline and intervened (in "partial" mode).
 
 ---
 
 ## 10. Roadmap
 
-- **v0.1 (este documento)** — especificação congelada para implementação inicial.
-- **v1.0** — DAG estático, tipos mistos completos (seção 4), motor de propagação one-shot, API espelhada R/Python, serialização JSON, testes de paridade.
-- **v1.x** — biblioteca de mecanismos expandida, visualização de grafo, melhorias de performance (vetorização da geração de população).
-- **v2.0** — dinâmica temporal e ciclos via dependências defasadas (seção 6), mantendo compatibilidade retroativa com sistemas v1.
-- **v2.x+** — ponto de partida para soluções de domínio específico construídas sobre `lepidoptera` (camada de extensão, seção 7.8).
-- **v1.x+ (transversal)** — camada de integração com IA (seção 12), incremental e opcional, não bloqueia v1.0/v2.0.
+- **v0.1 (this document)** — specification frozen for initial implementation.
+- **v1.0** — static DAG, full mixed types (section 4), one-shot propagation engine, mirrored R/Python API, JSON serialisation, parity tests.
+- **v1.x** — expanded mechanism library, graph visualisation, performance improvements (population generation vectorisation).
+- **v2.0** — temporal dynamics and cycles via lagged dependencies (section 6), maintaining backward compatibility with v1 systems.
+- **v2.x+** — starting point for domain-specific solutions built on `lepidoptera` (extension layer, section 7.8).
+- **v1.x+ (cross-cutting)** — AI integration layer (section 12), incremental and optional, does not block v1.0/v2.0.
 
 ---
 
-## 11. Integração com IA (LLMs/transformers) — extensão opcional e transversal
+## 11. AI integration (LLMs/transformers) — optional cross-cutting extension
 
-`lepidoptera` é desenhado para nascer "AI-native" sem precisar mudar a arquitetura central: a regra de que **qualquer função que respeite a assinatura de `Mechanism` é válida** (seção 3.3/4) já é a porta de entrada — um mecanismo cuja `fn` chama um LLM, ou um modelo treinado (incluindo arquiteturas transformer), é só mais um `Mechanism`. As frentes abaixo são extensões opcionais, ortogonais ao motor de propagação (seções 5-6) e independentes entre si — podem ser adotadas uma por vez, em qualquer ordem, sem alterar o core.
+`lepidoptera` is designed to be "AI-native" without requiring changes to the core architecture: the rule that **any function respecting the `Mechanism` signature is valid** (sections 3.3/4) is already the entry point — a mechanism whose `fn` calls an LLM, or a trained model (including transformer architectures), is just another `Mechanism`. The fronts below are optional extensions, orthogonal to the propagation engine (sections 5–6) and independent of each other — they can be adopted one at a time, in any order, without touching the core.
 
-### 11.1 `llm_mechanism` — mecanismo gerador via LLM
+### 11.1 `llm_mechanism` — LLM-based generative mechanism
 
-Um mecanismo cuja função geradora é uma chamada a um LLM, útil sobretudo para features semânticas/textuais que não cabem bem em regressão (seção 4) nem em cópula (seção 4.1) — ex.: dado idade, renda e histórico de um cliente (pais), gerar a categoria de sentimento ou um trecho de texto descritivo (filho).
+A mechanism whose generative function is an LLM call, useful especially for semantic/textual features that do not fit neatly into regression (section 4) or copula (section 4.1) — e.g. given a customer's age, income, and history (parents), generate a sentiment category or a descriptive text snippet (child).
 
-Assinatura conceitual (espelhada R/Python, mesmo padrão da seção 8):
+Conceptual signature (mirrored R/Python, same pattern as section 8):
 
 ```
 llm_mechanism(
-  prompt_template,   # template com placeholders para os valores dos pais
-  model,             # identificador do modelo/provedor
-  parents,           # nomes dos pais, na ordem em que preenchem o template
-  output_type,       # FeatureType do valor retornado
-  parser = "auto"    # como o texto de saída do LLM é convertido para output_type
-                      # (ex.: mapeamento para nível categórico/ordinal, parsing numérico para contínua)
+  prompt_template,   # template with placeholders for parent values
+  model,             # model/provider identifier
+  parents,           # parent names, in the order they fill the template
+  output_type,       # FeatureType of the returned value
+  parser = "auto"    # how LLM text output is converted to output_type
+                     # (e.g. mapping to categorical/ordinal level, numeric parsing for continuous)
 )
 ```
 
-`output_type`/`parent_types` são inferidos como em qualquer outro `Mechanism` (seção 3.3) — para o `System`, um nó com `llm_mechanism` é indistinguível de um nó com mecanismo de regressão ou de cópula.
+`output_type`/`parent_types` are inferred as in any other `Mechanism` (section 3.3) — to the `System`, a node with `llm_mechanism` is indistinguishable from a node with a regression or copula mechanism.
 
-**Custo e determinismo.** Chamadas a LLM têm custo e latência por unidade simulada, e não são deterministas mesmo com seed fixo (a menos que o backend ofereça controle de temperatura/seed) — `finalize_system()` emite aviso quando um `llm_mechanism` está em um caminho que será executado N vezes por unidade simulada, sugerindo cache por combinação de valores de pais (memoização) quando o domínio dos pais é finito (categórico/ordinal) ou discretizável.
+**Cost and determinism.** LLM calls have cost and latency per simulated unit, and are non-deterministic even with a fixed seed (unless the backend offers temperature/seed control) — `finalize_system()` emits a warning when an `llm_mechanism` is on a path that will be executed N times per unit, suggesting caching per parent-value combination (memoisation) when the parent domain is finite (categorical/ordinal) or discretisable.
 
-### 11.2 `learned_mechanism` — mecanismo ajustado a dados (qualquer modelo, incluindo transformers tabulares)
+### 11.2 `learned_mechanism` — data-fitted mechanism (any model, including tabular transformers)
 
-Generalização do padrão já usado em `copula_mechanism` (`fit_data`, seção 4.1): em vez de um modelo de cópula, qualquer modelo preditivo ajustável a dados observados — incluindo modelos transformer para dados tabulares — vira o mecanismo de um nó.
+Generalisation of the pattern already used in `copula_mechanism` (`fit_data`, section 4.1): instead of a copula model, any predictive model fittable to observed data — including transformer models for tabular data — becomes a node's mechanism.
 
 ```
 learned_mechanism(
   parents, child,
-  model = "auto",     # "auto" | "gbm" | "transformer" | objeto de modelo já ajustado
-  fit_data,           # dados observados de parents + child
-  uncertainty = "auto" # como a incerteza do modelo é propagada na amostragem (ex.: resíduos, distribuição preditiva)
+  model = "auto",      # "auto" | "gbm" | "transformer" | already-fitted model object
+  fit_data,            # observed data of parents + child
+  uncertainty = "auto" # how model uncertainty is propagated in sampling (e.g. residuals, predictive distribution)
 )
 ```
 
-Caso de uso típico: "tenho uma amostra observada dessas variáveis, quero que o mecanismo aprenda a relação automaticamente em vez de eu especificar a forma funcional" — mesmo espírito do `fit_data` da seção 4.1, mas sem exigir estrutura de cópula.
+Typical use case: "I have an observed sample of these variables, and I want the mechanism to learn the relationship automatically rather than me specifying the functional form" — same spirit as `fit_data` in section 4.1, but without requiring copula structure.
 
-### 11.3 `model_mechanism` — usar um modelo pré-treinado externo como mecanismo
+### 11.3 `model_mechanism` — use a pre-trained external model as a mechanism
 
-Difere do `learned_mechanism` em um ponto fundamental: `learned_mechanism` **treina** um modelo internamente a partir de `fit_data`; `model_mechanism` **usa** um modelo que o usuário já treinou fora do `lepidoptera` (um `ranger` random forest, um `glm`, um `xgboost`, um modelo `keras`, etc.).
+Differs from `learned_mechanism` in one fundamental way: `learned_mechanism` **trains** a model internally from `fit_data`; `model_mechanism` **uses** a model the user has already trained outside `lepidoptera` (a `ranger` random forest, a `glm`, an `xgboost`, a `keras` model, etc.).
 
 ```r
 model_mechanism(
@@ -395,38 +395,38 @@ model_mechanism(
 )
 ```
 
-O usuário é responsável pelo `predict_fn` completo: receber `parent_values` (named list), chamar o modelo, extrair o slot de saída correto, e opcionalmente adicionar ruído estocástico (ex.: resíduos Gaussianos para um `lm`). Para o `System`, um nó com `model_mechanism` é indistinguível de qualquer outro `Mechanism`.
+The user is responsible for the complete `predict_fn`: receiving `parent_values` (named list), calling the model, extracting the correct output slot, and optionally adding stochastic noise (e.g. Gaussian residuals for an `lm`). To the `System`, a node with `model_mechanism` is indistinguishable from any other `Mechanism`.
 
-**Casos de uso típicos.** (a) usar um random forest treinado em dados observacionais como mecanismo gerador de uma feature; (b) usar um modelo de regressão logística para gerar desfechos categóricos; (c) integrar modelos de deep learning (via qualquer wrapper R) ao sistema de simulação sem necessidade de API específica — o `predict_fn` é a fronteira de integração.
+**Typical use cases.** (a) using a random forest trained on observational data as a generative mechanism for a feature; (b) using a logistic regression model to generate categorical outcomes; (c) integrating deep learning models (via any R wrapper) into the simulation system without needing a specific API — the `predict_fn` is the integration boundary.
 
-### 11.4 Geração de `System` a partir de linguagem natural
+### 11.4 System generation from natural language
 
-Um LLM traduz uma descrição em texto livre do domínio ("um sistema com tabagismo, renda e doença cardíaca, em que renda afeta tabagismo e ambos afetam doença cardíaca") diretamente para o formato de serialização da seção 7, camada 7 (JSON/YAML) — o mesmo contrato já usado para paridade R/Python (`export_system`/`import_system`). Isso significa que essa frente **não exige nenhuma API nova**: o LLM só precisa aprender a gerar um artefato que o core já sabe importar e validar via `finalize_system()`/`System.finalize()`. Erros de validação (seção 3.5) funcionam como sinal de retroalimentação para o LLM corrigir a especificação gerada.
+An LLM translates a free-text domain description ("a system with smoking, income, and heart disease, where income affects smoking and both affect heart disease") directly into the serialisation format from section 7, layer 7 (JSON/YAML) — the same contract already used for R/Python parity (`export_system`/`import_system`). This means **this front requires no new API**: the LLM only needs to learn to generate an artefact that the core already knows how to import and validate via `finalize_system()`/`System.finalize()`. Validation errors (section 3.5) serve as feedback signals for the LLM to correct the generated specification.
 
-### 11.4 Consulta de intervenção em linguagem natural
+### 11.5 Intervention query in natural language
 
-Um LLM traduz uma pergunta em texto livre ("o que acontece com a doença cardíaca se eu aumentar a renda em 10%?") para uma chamada de `propagate()` com as `Intervention` correspondentes (`do_fix`/`do_distribution`/`shift`/`mechanism_override`, seção 3.6), executa a simulação, e narra o `SimulationResult`/`compare()` de volta em texto. Combina-se naturalmente com 11.3: descrever o sistema e perguntar sobre intervenções na mesma conversa.
+An LLM translates a free-text question ("what happens to heart disease if I increase income by 10%?") into a `propagate()` call with the corresponding `Intervention` objects (`do_fix`/`do_distribution`/`shift`/`mechanism_override`, section 3.6), executes the simulation, and narrates the `SimulationResult`/`compare()` back in text. Combines naturally with 11.4: describe the system and query interventions in the same conversation.
 
-### 11.5 Camada de ferramentas para agentes (MCP/tool-calling)
+### 11.6 Tool layer for agents (MCP/tool-calling)
 
-Expor a API pública da seção 8 (`add_feature`, `add_dependency`, `simulate`, `propagate`, etc.) como ferramentas chamáveis por um agente de LLM (ex.: via protocolo MCP) — o agente manipula um `System` passo a passo, decide quando simular e quando intervir, e relata resultados. Esta frente depende apenas da API pública já especificada; não requer nenhuma mudança no core além de um wrapper fino por cima de cada função/método.
+Expose the public API from section 8 (`add_feature`, `add_dependency`, `simulate`, `propagate`, etc.) as tools callable by an LLM agent (e.g. via the MCP protocol) — the agent manipulates a `System` step by step, decides when to simulate and when to intervene, and reports results. This front depends only on the already-specified public API; it requires no core changes beyond a thin wrapper over each function/method.
 
-### 11.6 Metadados semânticos
+### 11.7 Semantic metadata
 
-O campo `metadata` de `FeatureSpec` (seção 3.2), já presente e nunca interpretado pelo core, é o espaço natural para guardar descrições semânticas, embeddings ou anotações geradas por LLM — permitindo busca/similaridade entre features e mecanismos de sistemas diferentes (ex.: "encontre um sistema parecido com este já especificado"), sem exigir nenhum campo novo na estrutura de dados.
+The `metadata` field of `FeatureSpec` (section 3.2), already present and never interpreted by the core, is the natural space to store semantic descriptions, embeddings, or LLM-generated annotations — enabling search/similarity between features and mechanisms of different systems (e.g. "find a system similar to this one already specified"), without requiring any new fields in the data structure.
 
-### 11.7 Ordem de implementação recomendada
+### 11.8 Recommended implementation order
 
-Não há dependência técnica forte entre 11.1-11.6, mas a ordem de maior retorno é: (1) `llm_mechanism`/`learned_mechanism` — cabe na arquitetura atual sem mudar o spec; (2) geração de `System` via linguagem natural — abre a porta de entrada para usuários não-técnicos; (3) consulta de intervenção em linguagem natural — fecha o loop de "conversar com a simulação"; (4) camada de agente/MCP — depende de o core (seções 3-5) já estar minimamente implementado, já que expõe a API real, não um placeholder.
+There is no strong technical dependency between 11.1–11.7, but the highest-return order is: (1) `llm_mechanism`/`learned_mechanism` — fits the current architecture without changing the spec; (2) system generation from natural language — opens the entry door for non-technical users; (3) intervention query in natural language — closes the loop of "conversing with the simulation"; (4) agent/MCP layer — depends on the core (sections 3–5) being at least minimally implemented, since it exposes the real API, not a placeholder.
 
 ---
 
-## 12. Glossário rápido
+## 12. Glossary
 
-- **DAG**: grafo acíclico dirigido.
-- **Mecanismo marginal**: gera valor sem depender de outras features (feature-raiz).
-- **Mecanismo condicional**: gera valor a partir dos valores dos pais.
-- **Fecho transitivo a jusante**: todas as features alcançáveis a partir de um nó seguindo as arestas na direção da dependência (descendentes).
-- **Resampling parcial**: recalcular só as features afetadas por uma intervenção, mantendo o resto da população intacto.
-- **Paridade R/Python**: garantia de que as duas implementações representam o mesmo modelo conceitual e produzem resultados equivalentes a partir da mesma especificação de sistema.
-- **Mecanismo via LLM/aprendido/externo**: mecanismo cuja função geradora é uma chamada a um LLM, um modelo ajustado a dados internamente, ou um modelo pré-treinado externo (seções 11.1-11.3), tratado pelo core como qualquer outro `Mechanism`.
+- **DAG**: directed acyclic graph.
+- **Marginal mechanism**: generates a value without depending on other features (root feature).
+- **Conditional mechanism**: generates a value from parent values.
+- **Transitive downstream closure**: all features reachable from a node following edges in the dependency direction (descendants).
+- **Partial resampling**: recomputing only the features affected by an intervention, keeping the rest of the population intact.
+- **R/Python parity**: the guarantee that both implementations represent the same conceptual model and produce equivalent results from the same system specification.
+- **LLM/learned/external mechanism**: a mechanism whose generative function is an LLM call, an internally data-fitted model, or a pre-trained external model (sections 11.1–11.3), treated by the core as any other `Mechanism`.

@@ -7,5 +7,5 @@ bibentry(
   journal  = "Journal of Statistical Software",
   year     = "2026",
   note     = "Under review",
-  url      = "https://github.com/daniloasarti/lepidoptera"
+  url      = "https://github.com/danilosarti/lepidoptera"
 )

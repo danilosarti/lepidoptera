@@ -315,7 +315,7 @@
     #   temp = F_{3|2}(u3|u2) s.t. h(temp|a; C_{13|2}) = w
     #        = h^{-1}(w | a ; C_{13|2})
     #   u3   = h^{-1}(temp | u2 ; C_23)
-    pcs    <- rvinecopulib::pair_copulas(rv_model$model)
+    pcs    <- rv_model$model$pair_copulas   # direct slot access — pair_copulas() not exported
     C_12   <- pcs[[1L]][[1L]]
     C_23   <- pcs[[1L]][[2L]]
     C_13_2 <- pcs[[2L]][[1L]]
