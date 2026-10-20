@@ -21,7 +21,7 @@ Description: A domain-agnostic simulation engine for structural causal models
     Systems serialise to JSON for cross-language portability with the companion
     Python package.
 License: MIT + file LICENSE
-URL: https://github.com/danilosarti/lepidoptera
+URL: https://danilosarti.github.io/lepidoptera/, https://github.com/danilosarti/lepidoptera
 BugReports: https://github.com/danilosarti/lepidoptera/issues
 Encoding: UTF-8
 Depends: R (>= 4.1.0)

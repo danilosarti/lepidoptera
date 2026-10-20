@@ -1,5 +1,11 @@
 # lepidoptera
 
+[![CRAN](https://www.r-pkg.org/badges/version/lepidoptera)](https://CRAN.R-project.org/package=lepidoptera)
+[![PyPI](https://img.shields.io/pypi/v/lepidoptera)](https://pypi.org/project/lepidoptera/)
+[![arXiv](https://img.shields.io/badge/arXiv-2501.08242-b31b1b)](https://arxiv.org/abs/2501.08242)
+
+**Documentation:** https://danilosarti.github.io/lepidoptera/
+
 A generic, domain-agnostic simulation engine based on **Structural Causal Models (SCMs)**.
 
 Define any system as a Directed Acyclic Graph (DAG) of typed features, attach
