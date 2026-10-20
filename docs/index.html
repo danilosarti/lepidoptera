@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lepidoptera — Causal Simulation for Mixed Variables</title>
+<style>
+  /* ── Luna Moth palette ──────────────────────────────────────
+     mint wings · warm brown body · cream paper · gold spots  */
+  :root {
+    --bg:        #f5f0e6;
+    --surface:   #ece6d6;
+    --surface2:  #e2dbc8;
+    --border:    #c8bda4;
+    --border-s:  #ddd4be;
+
+    --mint:      #5aaeaa;
+    --mint-dim:  #d6edea;
+    --mint-deep: #38827e;
+
+    --brown:     #8b6340;
+    --brown-dim: #f0e6d6;
+
+    --gold:      #9e8230;
+    --gold-dim:  #f5ecd2;
+
+    --sage:      #5e8a68;
+    --sage-dim:  #d8eddc;
+
+    --mauve:     #8058a0;
+    --mauve-dim: #eddaf8;
+
+    --text:      #2e2018;
+    --muted:     #7a6858;
+    --faint:     #a8997e;
+
+    --font-mono: 'Fira Code','Cascadia Code','Menlo',Consolas,monospace;
+    --font-sans: 'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic','Segoe UI',system-ui,sans-serif;
+    --shadow-s:  0 1px 4px rgba(80,50,20,.08), 0 2px 12px rgba(80,50,20,.05);
+    --shadow-m:  0 2px 8px rgba(80,50,20,.10), 0 4px 24px rgba(80,50,20,.07);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+
+  body {
+    background: var(--bg);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.8;
+    padding: 0 1rem 7rem;
+  }
+
+  .wrap { max-width: 860px; margin: 0 auto; }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 4rem 0 2.5rem;
+    border-bottom: 1px solid var(--border-s);
+    margin-bottom: 3rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2rem;
+    align-items: center;
+    position: relative;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0;
+    width: 60px; height: 2px;
+    background: var(--mint);
+  }
+  .hero-text h1 {
+    font-size: 2.2rem;
+    color: var(--mint-deep);
+    letter-spacing: -.5px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .hero-text h1 em {
+    font-style: normal;
+    color: var(--brown);
+    font-size: 1rem;
+    font-weight: 400;
+    display: block;
+    margin-top: .3rem;
+    letter-spacing: 0;
+  }
+  .hero-text p {
+    color: var(--muted);
+    margin-top: .8rem;
+    font-size: 1rem;
+    max-width: 560px;
+    line-height: 1.7;
+  }
+  .hero-moth {
+    width: 110px;
+    opacity: .88;
+    flex-shrink: 0;
+  }
+
+  /* ── Badges ── */
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .55rem;
+    margin-top: 1.4rem;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .28rem .85rem;
+    border-radius: 20px;
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .3px;
+    text-decoration: none;
+    border: 1px solid;
+    transition: opacity .15s;
+  }
+  .badge:hover { opacity: .75; }
+  .badge.cran   { background: var(--mint-dim);  color: var(--mint-deep);  border-color: var(--mint);  }
+  .badge.pypi   { background: var(--gold-dim);  color: var(--gold);       border-color: var(--gold);  }
+  .badge.arxiv  { background: var(--mauve-dim); color: var(--mauve);      border-color: var(--mauve); }
+  .badge.github { background: var(--surface2);  color: var(--brown);      border-color: var(--border);}
+  .badge svg { width: 13px; height: 13px; fill: currentColor; }
+
+  /* ── Moth parade ── */
+  .moth-parade {
+    display: flex;
+    justify-content: center;
+    margin: 2.5rem 0;
+    opacity: .55;
+  }
+  .moth-parade--sm { margin: 1.5rem 0; }
+
+  /* ── TOC ── */
+  nav.toc {
+    background: var(--surface);
+    border: 1px solid var(--border-s);
+    border-radius: 14px;
+    padding: 1.4rem 2rem;
+    margin-bottom: 3.5rem;
+    box-shadow: var(--shadow-s);
+    columns: 2;
+    column-gap: 2rem;
+  }
+  nav.toc h2 {
+    font-size: .68rem; text-transform: uppercase; letter-spacing: 2.5px;
+    color: var(--faint); margin-bottom: .9rem; column-span: all;
+  }
+  nav.toc li { margin: .22rem 0; break-inside: avoid; list-style: none; }
+  nav.toc li::before { content: '→ '; color: var(--mint); font-size: .8rem; }
+  nav.toc a  { color: var(--mint-deep); text-decoration: none; font-size: .9rem; }
+  nav.toc a:hover { color: var(--mint); text-decoration: underline; }
+
+  /* ── Sections ── */
+  section { margin-bottom: 4.5rem; scroll-margin-top: 1.5rem; }
+
+  .step-label {
+    display: inline-block;
+    background: var(--mint-dim);
+    color: var(--mint-deep);
+    font-size: .66rem; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    border-radius: 20px;
+    padding: .18rem .75rem;
+    margin-bottom: .9rem;
+  }
+
+  h2 {
+    font-size: 1.4rem; color: var(--text);
+    font-weight: 600;
+    margin-bottom: .8rem; padding-bottom: .5rem;
+    border-bottom: 1px solid var(--border-s);
+  }
+
+  h3 { font-size: 1rem; color: var(--brown); margin: 1.6rem 0 .5rem; font-weight: 600; }
+
+  p { margin-bottom: .9rem; }
+
+  /* ── Install tabs ── */
+  .install-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 0;
+    border-radius: 10px 10px 0 0;
+    overflow: hidden;
+    border: 1px solid var(--border-s);
+    border-bottom: none;
+    width: fit-content;
+  }
+  .install-tab {
+    padding: .45rem 1.2rem;
+    font-size: .8rem; font-weight: 600;
+    letter-spacing: .4px;
+    cursor: pointer;
+    background: var(--surface2);
+    color: var(--muted);
+    border: none;
+    border-right: 1px solid var(--border-s);
+    font-family: var(--font-sans);
+    transition: background .1s, color .1s;
+  }
+  .install-tab:last-child { border-right: none; }
+  .install-tab.active {
+    background: var(--mint-dim);
+    color: var(--mint-deep);
+  }
+  .install-pane { display: none; }
+  .install-pane.active { display: block; }
+  .install-pane pre {
+    border-radius: 0 10px 10px 10px !important;
+    margin-top: 0 !important;
+  }
+
+  /* ── Code blocks ── */
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border-s);
+    border-left: 3px solid var(--mint);
+    border-radius: 0 10px 10px 0;
+    padding: 1.2rem 1.5rem;
+    overflow-x: auto;
+    margin: 1rem 0 1.5rem;
+    box-shadow: var(--shadow-s);
+  }
+  pre code {
+    font-family: var(--font-mono);
+    font-size: .875rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .kw  { color: #7a3a90; }
+  .fn  { color: var(--mint-deep); }
+  .str { color: #3a7038; }
+  .num { color: #9a6418; }
+  .cmt { color: var(--faint); font-style: italic; }
+  .arg { color: #3050a0; }
+  .op  { color: #8a3048; }
+  .var { color: var(--text); }
+
+  /* ── Callout boxes ── */
+  .callout {
+    border-left: 3px solid;
+    border-radius: 0 10px 10px 0;
+    padding: .9rem 1.25rem;
+    margin: 1.2rem 0;
+    font-size: .93rem;
+    box-shadow: var(--shadow-s);
+  }
+  .callout.info   { border-color: var(--mint);  background: var(--mint-dim); }
+  .callout.tip    { border-color: var(--gold);  background: var(--gold-dim); }
+  .callout.result { border-color: var(--sage);  background: var(--sage-dim); }
+  .callout.paper  { border-color: var(--mauve); background: var(--mauve-dim); }
+  .callout .label {
+    font-weight: 700; font-size: .73rem;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    margin-bottom: .3rem;
+  }
+  .callout.info   .label { color: var(--mint-deep); }
+  .callout.tip    .label { color: var(--gold);       }
+  .callout.result .label { color: var(--sage);       }
+  .callout.paper  .label { color: var(--mauve);      }
+
+  /* ── Tables ── */
+  table { width:100%; border-collapse:collapse; margin:1rem 0 1.5rem; font-size:.9rem; }
+  th {
+    background: var(--surface2); color: var(--muted);
+    text-align:left; padding:.6rem 1rem;
+    font-size:.74rem; text-transform:uppercase; letter-spacing:1px;
+    border-bottom: 1px solid var(--border);
+  }
+  td { padding:.6rem 1rem; border-bottom:1px solid var(--border-s); vertical-align:top; }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--mint-deep); font-family: var(--font-mono); font-size:.84rem; }
+  td:nth-child(2){ color: var(--brown); }
+
+  /* ── Output block ── */
+  .output {
+    background: #eee8d8;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    font-family: var(--font-mono); font-size:.82rem; line-height:1.65;
+    color: var(--muted); margin:1rem 0 1.5rem; white-space:pre;
+  }
+
+  /* ── Diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border-s);
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin: 1.2rem 0 1.5rem;
+    box-shadow: var(--shadow-s);
+  }
+  .diagram-caption {
+    text-align: center;
+    color: var(--faint);
+    font-size: .82rem;
+    margin-top: .9rem;
+  }
+
+  /* ── Feature cards ── */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border-s);
+    border-radius: 12px;
+    padding: 1.1rem 1.3rem;
+    box-shadow: var(--shadow-s);
+  }
+  .feature-card .icon { font-size: 1.4rem; margin-bottom: .4rem; }
+  .feature-card h4 { font-size: .9rem; color: var(--mint-deep); font-weight: 600; margin-bottom: .3rem; }
+  .feature-card p  { font-size: .84rem; color: var(--muted); margin: 0; line-height: 1.5; }
+
+  /* ── Paper example cards ── */
+  .paper-card {
+    background: var(--surface);
+    border: 1px solid var(--border-s);
+    border-radius: 14px;
+    padding: 1.4rem 1.6rem;
+    margin: 1.2rem 0;
+    box-shadow: var(--shadow-s);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+  .paper-card .num-badge {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .85rem; font-weight: 700;
+    flex-shrink: 0;
+    margin-top: .1rem;
+  }
+  .paper-card.ct  .num-badge { background: var(--mint-dim);  color: var(--mint-deep); }
+  .paper-card.ew  .num-badge { background: var(--gold-dim);  color: var(--gold);      }
+  .paper-card.med .num-badge { background: var(--mauve-dim); color: var(--mauve);     }
+  .paper-card h4 { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: .3rem; }
+  .paper-card p  { font-size: .89rem; color: var(--muted); margin: 0; line-height: 1.6; }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--border-s);
+    padding-top: 2rem;
+    margin-top: 4rem;
+    color: var(--faint);
+    font-size: .83rem;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .8rem;
+  }
+  footer a { color: var(--mint-deep); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── Inline code ── */
+  code {
+    font-family: var(--font-mono);
+    font-size: .85em;
+    background: var(--surface2);
+    border-radius: 4px;
+    padding: .05em .35em;
+    color: var(--mint-deep);
+  }
+  pre code { background: none; padding: 0; border-radius: 0; }
+
+  @media (max-width: 600px) {
+    .hero { grid-template-columns: 1fr; }
+    .hero-moth { width: 70px; }
+    nav.toc { columns: 1; }
+    .paper-card { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ══════════════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════════════ -->
+<header class="hero">
+  <div class="hero-text">
+    <h1>lepidoptera
+      <em>Causal simulation engine for structural causal models with mixed variable types</em>
+    </h1>
+    <p>
+      Separate the causal graph from the mechanism, declare any mix of continuous,
+      ordinal, and categorical variables, then simulate populations, apply do-calculus
+      interventions, and answer individual-level counterfactual queries — all in one pipe.
+    </p>
+    <div class="badges">
+      <a class="badge cran"
+         href="https://CRAN.R-project.org/package=lepidoptera"
+         target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+        CRAN v0.1.2
+      </a>
+      <a class="badge pypi"
+         href="https://pypi.org/project/lepidoptera/"
+         target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm-1-5h2v2h-2zm0-8h2v6h-2z"/></svg>
+        PyPI 0.1.0
+      </a>
+      <a class="badge arxiv"
+         href="https://arxiv.org/abs/2501.08242"
+         target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+        arXiv preprint
+      </a>
+      <a class="badge github"
+         href="https://github.com/danilosarti/lepidoptera"
+         target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 6.1 18 6.4 18 6.4c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+  <div class="hero-moth" aria-hidden="true">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 47 36 C 36 22 14 14 8 26 C 2 40 14 56 41 57" fill="#8dd4ce" stroke="#5aaeaa" stroke-width="1"/>
+      <path d="M 53 36 C 64 22 86 14 92 26 C 98 40 86 56 59 57" fill="#8dd4ce" stroke="#5aaeaa" stroke-width="1"/>
+      <path d="M 43 56 C 22 62 10 73 14 82 C 18 88 30 82 34 72" fill="#70bcb8" stroke="#5aaeaa" stroke-width="1"/>
+      <path d="M 34 72 C 32 78 26 86 22 94" fill="none" stroke="#5aaeaa" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M 34 72 C 32 78 26 86 22 94" fill="none" stroke="#8dd4ce" stroke-width="2" stroke-linecap="round"/>
+      <path d="M 57 56 C 78 62 90 73 86 82 C 82 88 70 82 66 72" fill="#70bcb8" stroke="#5aaeaa" stroke-width="1"/>
+      <path d="M 66 72 C 68 78 74 86 78 94" fill="none" stroke="#5aaeaa" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M 66 72 C 68 78 74 86 78 94" fill="none" stroke="#8dd4ce" stroke-width="2" stroke-linecap="round"/>
+      <path d="M 47 36 C 32 40 18 46 14 56" fill="none" stroke="#5aaeaa" stroke-width=".5" opacity=".4"/>
+      <path d="M 53 36 C 68 40 82 46 86 56" fill="none" stroke="#5aaeaa" stroke-width=".5" opacity=".4"/>
+      <ellipse cx="24" cy="36" rx="6" ry="4" fill="#f2e4b0" opacity=".88" transform="rotate(-14 24 36)"/>
+      <ellipse cx="76" cy="36" rx="6" ry="4" fill="#f2e4b0" opacity=".88" transform="rotate(14 76 36)"/>
+      <ellipse cx="22" cy="68" rx="3.5" ry="2.5" fill="#f2e4b0" opacity=".75" transform="rotate(-5 22 68)"/>
+      <ellipse cx="78" cy="68" rx="3.5" ry="2.5" fill="#f2e4b0" opacity=".75" transform="rotate(5 78 68)"/>
+      <ellipse cx="50" cy="50" rx="5.5" ry="19" fill="#8b6340"/>
+      <line x1="50" y1="36" x2="50" y2="64" stroke="#a07848" stroke-width=".7" opacity=".4"/>
+      <ellipse cx="50" cy="31" rx="5" ry="4" fill="#a07848"/>
+      <path d="M 46 28 C 40 20 33 13 26 8" stroke="#7a5030" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+      <circle cx="26" cy="8" r="2" fill="#7a5030"/>
+      <path d="M 54 28 C 60 20 67 13 74 8" stroke="#7a5030" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+      <circle cx="74" cy="8" r="2" fill="#7a5030"/>
+    </svg>
+  </div>
+</header>
+
+
+<!-- ══════════════════════════════════════════════════════
+     FEATURE OVERVIEW
+═══════════════════════════════════════════════════════ -->
+<div class="feature-grid">
+  <div class="feature-card">
+    <div class="icon">🌿</div>
+    <h4>Mixed variable types</h4>
+    <p>Continuous, ordinal, and categorical variables in any combination within the same DAG.</p>
+  </div>
+  <div class="feature-card">
+    <div class="icon">🔀</div>
+    <h4>Clean intervention API</h4>
+    <p><code>do_fix()</code>, <code>shift()</code>, and <code>mechanism_override()</code> propagate through all downstream nodes automatically.</p>
+  </div>
+  <div class="feature-card">
+    <div class="icon">🧬</div>
+    <h4>Vine copula mechanism</h4>
+    <p>Fit non-parametric joint dependence from observed data and use it as the conditional generating rule at simulation time.</p>
+  </div>
+  <div class="feature-card">
+    <div class="icon">🔬</div>
+    <h4>Counterfactual queries</h4>
+    <p>Individual Treatment Effects (ITE) via <code>mode="partial"</code> — the same unit appears in both potential worlds.</p>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TOC
+═══════════════════════════════════════════════════════ -->
+<nav class="toc" aria-label="Contents">
+  <h2>Contents</h2>
+  <ul>
+    <li><a href="#install">Installation</a></li>
+    <li><a href="#minimal">Minimal example</a></li>
+    <li><a href="#concepts">Core concepts</a></li>
+    <li><a href="#mechanisms">Mechanism library</a></li>
+    <li><a href="#assemble">Assemble &amp; finalize</a></li>
+    <li><a href="#simulate">Simulate a population</a></li>
+    <li><a href="#propagate">Interventions &amp; propagation</a></li>
+    <li><a href="#counterfactual">Counterfactual mode</a></li>
+    <li><a href="#copula">Vine copula mechanism</a></li>
+    <li><a href="#paper">Paper illustrations</a></li>
+    <li><a href="#citation">Citation</a></li>
+  </ul>
+</nav>
+
+
+<!-- ══════════════════════════════════════════════════════
+     INSTALL
+═══════════════════════════════════════════════════════ -->
+<section id="install">
+  <h2>Installation</h2>
+
+  <h3>R — from CRAN</h3>
+  <pre><code><span class="fn">install.packages</span>(<span class="str">"lepidoptera"</span>)</code></pre>
+
+  <div class="callout info">
+    <div class="label">Optional dependency</div>
+    The vine copula mechanism (<code>copula_mechanism()</code>) requires
+    <strong>rvinecopulib</strong>. Install it with
+    <code>install.packages("rvinecopulib")</code> to unlock that feature.
+  </div>
+
+  <h3>Python — from PyPI</h3>
+  <pre><code>pip install lepidoptera</code></pre>
+
+  <h3>Development version</h3>
+  <pre><code><span class="cmt"># R</span>
+<span class="cmt"># install.packages("pak")</span>
+<span class="fn">pak</span><span class="op">::</span><span class="fn">pkg_install</span>(<span class="str">"danilosarti/lepidoptera/r-pkg"</span>)
+
+<span class="cmt"># Python</span>
+<span class="cmt"># pip install git+https://github.com/danilosarti/lepidoptera.git#subdirectory=python-pkg</span></code></pre>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     MINIMAL EXAMPLE
+═══════════════════════════════════════════════════════ -->
+<section id="minimal">
+  <h2>Minimal example</h2>
+  <p>Age drives cardiovascular disease (CVD) risk through a logistic model. Four lines to define, one to simulate.</p>
+
+<pre><code><span class="fn">library</span>(<span class="str">"lepidoptera"</span>)
+
+<span class="cmt"># Feature specs — declare name, type, bounds</span>
+<span class="var">age_spec</span> <span class="op">&lt;-</span> <span class="fn">feature_spec</span>(<span class="str">"age"</span>, <span class="str">"continuous"</span>,  <span class="fn">list</span>(<span class="arg">min</span><span class="op">=</span><span class="num">18</span>, <span class="arg">max</span><span class="op">=</span><span class="num">100</span>))
+<span class="var">cvd_spec</span> <span class="op">&lt;-</span> <span class="fn">feature_spec</span>(<span class="str">"cvd"</span>, <span class="str">"categorical"</span>, <span class="fn">list</span>(<span class="arg">levels</span><span class="op">=</span><span class="fn">c</span>(<span class="str">"no"</span>, <span class="str">"yes"</span>)))
+
+<span class="cmt"># Mechanisms — how each variable is generated</span>
+<span class="var">mech_age</span> <span class="op">&lt;-</span> <span class="fn">mechanism_library_get</span>(<span class="str">"normal"</span>)(<span class="arg">mean</span><span class="op">=</span><span class="num">55</span>, <span class="arg">sd</span><span class="op">=</span><span class="num">12</span>)
+<span class="var">mech_cvd</span> <span class="op">&lt;-</span> <span class="fn">mechanism_library_get</span>(<span class="str">"multinomial_logit"</span>)(
+  <span class="arg">levels</span>     <span class="op">=</span> <span class="fn">c</span>(<span class="str">"no"</span>, <span class="str">"yes"</span>),
+  <span class="arg">coefs</span>      <span class="op">=</span> <span class="fn">list</span>(<span class="arg">yes</span> <span class="op">=</span> <span class="fn">list</span>(<span class="arg">age</span> <span class="op">=</span> <span class="num">0.04</span>)),
+  <span class="arg">intercepts</span> <span class="op">=</span> <span class="fn">list</span>(<span class="arg">yes</span> <span class="op">=</span> <span class="op">-</span><span class="num">3.0</span>)
+)
+
+<span class="cmt"># Assemble the causal system</span>
+<span class="var">sys</span> <span class="op">&lt;-</span> <span class="fn">new_system</span>()                                 <span class="op">|&gt;</span>
+  <span class="fn">add_feature</span>(<span class="var">age_spec</span>)                             <span class="op">|&gt;</span>
+  <span class="fn">add_feature</span>(<span class="var">cvd_spec</span>)                             <span class="op">|&gt;</span>
+  <span class="fn">add_dependency</span>(<span class="fn">character</span>(<span class="num">0</span>), <span class="str">"age"</span>, <span class="var">mech_age</span>)   <span class="op">|&gt;</span>
+  <span class="fn">add_dependency</span>(<span class="str">"age"</span>,        <span class="str">"cvd"</span>, <span class="var">mech_cvd</span>)   <span class="op">|&gt;</span>
+  <span class="fn">finalize_system</span>()
+
+<span class="cmt"># Simulate 1 000 individuals</span>
+<span class="var">pop</span> <span class="op">&lt;-</span> <span class="fn">simulate</span>(<span class="var">sys</span>, <span class="arg">n</span><span class="op">=</span><span class="num">1000</span>, <span class="arg">seed</span><span class="op">=</span><span class="num">1</span>)
+<span class="fn">prop.table</span>(<span class="fn">table</span>(<span class="var">pop</span><span class="op">$</span><span class="var">cvd</span>))</code></pre>
+
+<div class="output">cvd
+   no   yes
+0.823 0.177</div>
+
+  <div class="callout result">
+    <div class="label">Interpretation</div>
+    About 18% of the simulated population has CVD — consistent with the logistic model
+    and an average age of 55. Run <code>plot_dag(sys)</code> to visualise the causal graph.
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     CORE CONCEPTS
+═══════════════════════════════════════════════════════ -->
+<section id="concepts">
+  <h2>Core concepts</h2>
+  <p>lepidoptera separates three concerns that are typically conflated in simulation code:</p>
+
+  <!-- DAG diagram -->
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 560 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:560px;display:block;margin:0 auto">
+      <defs>
+        <marker id="arh" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0,8 3,0 6" fill="#b8a888"/>
+        </marker>
+      </defs>
+      <!-- Three pillars -->
+      <rect x="20"  y="50" width="148" height="70" rx="12" fill="#d6edea" stroke="#5aaeaa" stroke-width="1.6"/>
+      <text x="94"  y="78" text-anchor="middle" fill="#2a6e6a" font-family="ui-monospace,monospace" font-size="11" font-weight="700">feature_spec()</text>
+      <text x="94"  y="94" text-anchor="middle" fill="#5aaeaa" font-family="system-ui" font-size="9.5">name · type · bounds</text>
+      <text x="94"  y="110" text-anchor="middle" fill="#5aaeaa" font-family="system-ui" font-size="9">continuous / ordinal / categorical</text>
+
+      <path d="M 168 85 L 204 85" stroke="#b8a888" stroke-width="1.5" fill="none" marker-end="url(#arh)"/>
+
+      <rect x="206" y="50" width="148" height="70" rx="12" fill="#f5ecd2" stroke="#9e8230" stroke-width="1.6"/>
+      <text x="280" y="78" text-anchor="middle" fill="#6a5410" font-family="ui-monospace,monospace" font-size="11" font-weight="700">mechanism</text>
+      <text x="280" y="94" text-anchor="middle" fill="#9e8230" font-family="system-ui" font-size="9.5">how the value is drawn</text>
+      <text x="280" y="110" text-anchor="middle" fill="#9e8230" font-family="system-ui" font-size="9">built-in · custom · copula</text>
+
+      <path d="M 354 85 L 390 85" stroke="#b8a888" stroke-width="1.5" fill="none" marker-end="url(#arh)"/>
+
+      <rect x="392" y="50" width="148" height="70" rx="12" fill="#eddaf8" stroke="#8058a0" stroke-width="1.6"/>
+      <text x="466" y="78" text-anchor="middle" fill="#52307a" font-family="ui-monospace,monospace" font-size="11" font-weight="700">add_dependency()</text>
+      <text x="466" y="94" text-anchor="middle" fill="#8058a0" font-family="system-ui" font-size="9.5">who depends on whom</text>
+      <text x="466" y="110" text-anchor="middle" fill="#8058a0" font-family="system-ui" font-size="9">DAG edge: parents → child</text>
+
+      <!-- labels above -->
+      <text x="94"  y="38" text-anchor="middle" fill="#a8997e" font-family="system-ui" font-size="9" font-weight="700" letter-spacing="1.8">FEATURE</text>
+      <text x="280" y="38" text-anchor="middle" fill="#a8997e" font-family="system-ui" font-size="9" font-weight="700" letter-spacing="1.8">MECHANISM</text>
+      <text x="466" y="38" text-anchor="middle" fill="#a8997e" font-family="system-ui" font-size="9" font-weight="700" letter-spacing="1.8">DEPENDENCY</text>
+    </svg>
+    <div class="diagram-caption">The three building blocks — define once, compose freely</div>
+  </div>
+
+  <p>
+    A <strong>feature</strong> is a typed variable. A <strong>mechanism</strong> is the generating
+    rule for that variable given its parents. A <strong>dependency</strong> wires them together
+    into a DAG. <code>finalize_system()</code> validates the graph, checks type consistency,
+    and computes the topological order for simulation.
+  </p>
+
+  <div class="callout tip">
+    <div class="label">Design principle</div>
+    The same mechanism can be reused across systems. The same system can be queried
+    with different interventions. Separation of concerns makes simulation code easy to
+    audit and easy to extend.
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     MECHANISM LIBRARY
+═══════════════════════════════════════════════════════ -->
+<section id="mechanisms">
+  <h2>Mechanism library</h2>
+  <p>
+    All built-in factories are accessed via <code>mechanism_library_get(name)</code>, which
+    returns a configuration function. Call it with the hyperparameters to get a
+    mechanism ready to attach to a node.
+  </p>
+
+  <table>
+    <tr><th>Name</th><th>Variable type</th><th>Key parameters</th></tr>
+    <tr><td>normal</td><td>Continuous root node</td><td>mean, sd</td></tr>
+    <tr><td>categorical_marginal</td><td>Categorical root node</td><td>levels, probs</td></tr>
+    <tr><td>ordinal_marginal</td><td>Ordinal root node</td><td>levels, probs</td></tr>
+    <tr><td>linear_gaussian</td><td>Continuous child — linear parents</td><td>coefs, intercept, sd</td></tr>
+    <tr><td>group_effect</td><td>Continuous child — one categorical parent</td><td>named list(mean, sd)</td></tr>
+    <tr><td>ordered_logit</td><td>Ordinal child</td><td>levels, coefs, cutpoints</td></tr>
+    <tr><td>multinomial_logit</td><td>Categorical child</td><td>levels, coefs, intercepts</td></tr>
+  </table>
+
+  <h3>Custom mechanisms</h3>
+  <p>
+    Write any R function that accepts a named list <code>pv</code> of parent values and returns
+    one generated value, then register it with <code>register_mechanism()</code>.
+    Ordinal parent values arrive as factors — cast with <code>as.character()</code> before <code>switch()</code>.
+  </p>
+
+<pre><code><span class="var">my_fn</span> <span class="op">&lt;-</span> <span class="kw">function</span>(<span class="var">pv</span>) {
+  <span class="var">mu</span> <span class="op">&lt;-</span> <span class="num">40</span> <span class="op">+</span> <span class="fn">as.numeric</span>(<span class="var">pv</span><span class="op">$</span><span class="var">dose</span>) <span class="op">*</span> <span class="num">8.2</span>
+  <span class="var">mu</span> <span class="op">&lt;-</span> <span class="var">mu</span> <span class="op">+</span> <span class="kw">switch</span>(<span class="fn">as.character</span>(<span class="var">pv</span><span class="op">$</span><span class="var">arm</span>),
+    <span class="arg">treatment</span><span class="op">=</span><span class="num">12</span>, <span class="arg">control</span><span class="op">=</span><span class="num">0</span>, <span class="num">0</span>)
+  <span class="fn">rnorm</span>(<span class="num">1</span>, <span class="var">mu</span>, <span class="arg">sd</span><span class="op">=</span><span class="num">10</span>)
+}
+<span class="var">mech_outcome</span> <span class="op">&lt;-</span> <span class="fn">register_mechanism</span>(
+  <span class="str">"outcome_linear"</span>, <span class="var">my_fn</span>,
+  <span class="arg">parent_types</span> <span class="op">=</span> <span class="fn">c</span>(<span class="str">"continuous"</span>, <span class="str">"categorical"</span>),
+  <span class="arg">output_type</span>  <span class="op">=</span> <span class="str">"continuous"</span>
+)</code></pre>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     ASSEMBLE
+═══════════════════════════════════════════════════════ -->
+<section id="assemble">
+  <h2>Assemble &amp; finalize</h2>
+  <p>Chain everything with R's native pipe. <code>finalize_system()</code> validates the DAG and precomputes topological order.</p>
+
+<pre><code><span class="var">trial_sys</span> <span class="op">&lt;-</span> <span class="fn">new_system</span>() <span class="op">|&gt;</span>
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"age"</span>,       <span class="str">"continuous"</span>,  <span class="fn">list</span>(<span class="arg">min</span><span class="op">=</span><span class="num">18</span>, <span class="arg">max</span><span class="op">=</span><span class="num">90</span>))) <span class="op">|&gt;</span>
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"arm"</span>,       <span class="str">"categorical"</span>, <span class="fn">list</span>(<span class="arg">levels</span><span class="op">=</span><span class="fn">c</span>(<span class="str">"control"</span>,<span class="str">"treatment"</span>)))) <span class="op">|&gt;</span>
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"severity"</span>,  <span class="str">"ordinal"</span>,     <span class="fn">list</span>(<span class="arg">levels</span><span class="op">=</span><span class="fn">c</span>(<span class="str">"mild"</span>,<span class="str">"moderate"</span>,<span class="str">"severe"</span>)))) <span class="op">|&gt;</span>
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"response"</span>,  <span class="str">"continuous"</span>,  <span class="fn">list</span>(<span class="arg">min</span><span class="op">=</span><span class="num">0</span>, <span class="arg">max</span><span class="op">=</span><span class="num">100</span>))) <span class="op">|&gt;</span>
+  <span class="fn">add_dependency</span>(<span class="fn">character</span>(<span class="num">0</span>),                          <span class="str">"age"</span>,      <span class="var">mech_age</span>) <span class="op">|&gt;</span>
+  <span class="fn">add_dependency</span>(<span class="fn">character</span>(<span class="num">0</span>),                          <span class="str">"arm"</span>,      <span class="var">mech_arm</span>) <span class="op">|&gt;</span>
+  <span class="fn">add_dependency</span>(<span class="str">"age"</span>,                                  <span class="str">"severity"</span>, <span class="var">mech_sev</span>) <span class="op">|&gt;</span>
+  <span class="fn">add_dependency</span>(<span class="fn">c</span>(<span class="str">"age"</span>,<span class="str">"arm"</span>,<span class="str">"severity"</span>),             <span class="str">"response"</span>, <span class="var">mech_resp</span>) <span class="op">|&gt;</span>
+  <span class="fn">finalize_system</span>()</code></pre>
+
+  <div class="callout info">
+    <div class="label">Validation</div>
+    <code>finalize_system()</code> throws an informative error if the DAG has a cycle,
+    if a parent type doesn't match what a mechanism expects, or if a mechanism
+    is missing for any declared node.
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     SIMULATE
+═══════════════════════════════════════════════════════ -->
+<section id="simulate">
+  <h2>Simulate a population</h2>
+  <p><code>simulate(system, n, seed)</code> samples <em>n</em> units in topological order and returns a plain data frame.</p>
+
+<pre><code><span class="var">pop</span> <span class="op">&lt;-</span> <span class="fn">simulate</span>(<span class="var">sys</span>, <span class="arg">n</span><span class="op">=</span><span class="num">2000</span>, <span class="arg">seed</span><span class="op">=</span><span class="num">42</span>)
+<span class="fn">head</span>(<span class="var">pop</span>)
+<span class="fn">plot_dag</span>(<span class="var">sys</span>)   <span class="cmt"># visualise the causal graph</span></code></pre>
+
+  <div class="callout tip">
+    <div class="label">Reproducibility</div>
+    The same <code>seed</code> always produces the same population. Per-unit seeds are
+    assigned internally, so adding more units doesn't reshuffle existing ones.
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     PROPAGATE
+═══════════════════════════════════════════════════════ -->
+<section id="propagate">
+  <h2>Interventions &amp; propagation</h2>
+  <p>
+    <code>propagate()</code> applies one or more interventions, automatically recomputes all
+    downstream variables, and returns <code>$baseline</code> and <code>$intervened</code> data frames.
+    Upstream variables are unaffected.
+  </p>
+
+  <table>
+    <tr><th>Intervention</th><th>What it does</th></tr>
+    <tr><td>do_fix(var, val)</td><td>Fix the variable to a constant — classic do-calculus</td></tr>
+    <tr><td>shift(var, fn)</td><td>Add a delta: <code>fn(x)</code> applied to the natural value</td></tr>
+    <tr><td>mechanism_override(var, fn)</td><td>Swap out the entire generating rule</td></tr>
+  </table>
+
+<pre><code><span class="cmt"># Average Treatment Effect (ATE) — two independent populations</span>
+<span class="var">r_ate</span> <span class="op">&lt;-</span> <span class="fn">propagate</span>(<span class="var">sys</span>,
+  <span class="arg">interventions</span> <span class="op">=</span> <span class="fn">list</span>(<span class="fn">do_fix</span>(<span class="str">"arm"</span>, <span class="str">"treatment"</span>)),
+  <span class="arg">n</span>    <span class="op">=</span> <span class="num">2000</span>,
+  <span class="arg">seed</span> <span class="op">=</span> <span class="num">42</span>,
+  <span class="arg">mode</span> <span class="op">=</span> <span class="str">"full"</span>   <span class="cmt"># resample both worlds independently</span>
+)
+<span class="fn">mean</span>(<span class="var">r_ate</span><span class="op">$</span><span class="var">intervened</span><span class="op">$</span><span class="var">response</span>) <span class="op">-</span> <span class="fn">mean</span>(<span class="var">r_ate</span><span class="op">$</span><span class="var">baseline</span><span class="op">$</span><span class="var">response</span>)
+
+<span class="cmt"># A relative shift — "what if every patient received 2 mg more?"</span>
+<span class="var">r_shift</span> <span class="op">&lt;-</span> <span class="fn">propagate</span>(<span class="var">sys</span>,
+  <span class="arg">interventions</span> <span class="op">=</span> <span class="fn">list</span>(<span class="fn">shift</span>(<span class="str">"dose"</span>, <span class="kw">function</span>(<span class="var">x</span>) <span class="var">x</span> <span class="op">+</span> <span class="num">2</span>)),
+  <span class="arg">n</span>    <span class="op">=</span> <span class="num">2000</span>,
+  <span class="arg">seed</span> <span class="op">=</span> <span class="num">42</span>,
+  <span class="arg">mode</span> <span class="op">=</span> <span class="str">"partial"</span>
+)</code></pre>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     COUNTERFACTUAL
+═══════════════════════════════════════════════════════ -->
+<section id="counterfactual">
+  <h2>Counterfactual mode — Individual Treatment Effects</h2>
+  <p>
+    With <code>mode="partial"</code>, unaffected nodes retain their baseline draws.
+    The <em>same individual</em> appears in both potential worlds, enabling ITE estimation.
+  </p>
+
+<pre><code><span class="cmt"># Same 1 000 people — what if everyone were 70?</span>
+<span class="var">result_cf</span> <span class="op">&lt;-</span> <span class="fn">propagate</span>(
+  <span class="var">sys</span>,
+  <span class="arg">interventions</span> <span class="op">=</span> <span class="fn">list</span>(<span class="fn">do_fix</span>(<span class="str">"age"</span>, <span class="num">70</span>)),
+  <span class="arg">n</span>    <span class="op">=</span> <span class="num">1000</span>,
+  <span class="arg">seed</span> <span class="op">=</span> <span class="num">1</span>,
+  <span class="arg">mode</span> <span class="op">=</span> <span class="str">"partial"</span>
+)
+
+<span class="cmt"># Individual Treatment Effect for each person</span>
+<span class="var">ite</span> <span class="op">&lt;-</span> (<span class="var">result_cf</span><span class="op">$</span><span class="var">intervened</span><span class="op">$</span><span class="var">cvd</span> <span class="op">==</span> <span class="str">"yes"</span>) <span class="op">-</span>
+       (<span class="var">result_cf</span><span class="op">$</span><span class="var">baseline</span><span class="op">$</span><span class="var">cvd</span>  <span class="op">==</span> <span class="str">"yes"</span>)
+<span class="fn">mean</span>(<span class="var">ite</span>)   <span class="cmt"># estimated ATE from counterfactual pairs</span></code></pre>
+
+  <div class="callout result">
+    <div class="label">Mode comparison</div>
+    Use <code>mode="full"</code> for population-level ATE (two independent draws).
+    Use <code>mode="partial"</code> for individual-level ITE (same-unit counterfactual).
+    The partial mode correctly handles paths through collider variables.
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     MID-PAGE MOTH PARADE
+═══════════════════════════════════════════════════════ -->
+<div class="moth-parade moth-parade--sm" aria-hidden="true">
+  <svg viewBox="0 0 340 96" xmlns="http://www.w3.org/2000/svg"
+       style="width:100%;max-width:330px;display:block;margin:0 auto;opacity:.6">
+    <!-- Tiger Moth (gold) @ cx=56 -->
+    <path d="M56,42 C49,28 22,22 17,32 C13,44 27,56 50,54" fill="#e8c870" stroke="#9e8230" stroke-width="1"/>
+    <path d="M56,42 C63,28 90,22 95,32 C99,44 85,56 62,54" fill="#e8c870" stroke="#9e8230" stroke-width="1"/>
+    <path d="M50,54 C36,60 20,68 18,74 C16,78 30,76 44,66" fill="#c89838" stroke="#9e8230" stroke-width="1"/>
+    <path d="M62,54 C76,60 92,68 94,74 C96,78 82,76 68,66" fill="#c89838" stroke="#9e8230" stroke-width="1"/>
+    <circle cx="24" cy="67" r="2.8" fill="#f2e4b0" opacity=".75"/>
+    <circle cx="88" cy="67" r="2.8" fill="#f2e4b0" opacity=".75"/>
+    <ellipse cx="56" cy="52" rx="3.5" ry="17" fill="#8b6340"/>
+    <ellipse cx="56" cy="36" rx="3.5" ry="4" fill="#a07848"/>
+    <path d="M53,34 C48,24 43,16 38,10" stroke="#6a4020" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="38" cy="10" r="1.8" fill="#6a4020"/>
+    <path d="M59,34 C64,24 69,16 74,10" stroke="#6a4020" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="74" cy="10" r="1.8" fill="#6a4020"/>
+
+    <!-- Luna Swallowtail (mint) @ cx=170 -->
+    <path d="M170,36 C158,20 126,12 122,24 C118,38 134,56 162,52" fill="#a8dcd8" stroke="#5aaeaa" stroke-width="1.3"/>
+    <path d="M170,36 C182,20 214,12 218,24 C222,38 206,56 178,52" fill="#a8dcd8" stroke="#5aaeaa" stroke-width="1.3"/>
+    <ellipse cx="138" cy="30" rx="6.5" ry="4.5" fill="#f2e4b0" opacity=".85" transform="rotate(-12 138 30)"/>
+    <ellipse cx="202" cy="30" rx="6.5" ry="4.5" fill="#f2e4b0" opacity=".85" transform="rotate(12 202 30)"/>
+    <path d="M162,52 C142,62 120,70 116,78 C114,84 130,82 148,72" fill="#8dd4ce" stroke="#5aaeaa" stroke-width="1.3"/>
+    <path d="M178,52 C198,62 220,70 224,78 C226,84 210,82 192,72" fill="#8dd4ce" stroke="#5aaeaa" stroke-width="1.3"/>
+    <path d="M148,72 C142,78 134,86 128,91" stroke="#5aaeaa" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M148,72 C142,78 134,86 128,91" stroke="#8dd4ce" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M192,72 C198,78 206,86 212,91" stroke="#5aaeaa" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M192,72 C198,78 206,86 212,91" stroke="#8dd4ce" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="170" cy="47" rx="4" ry="20" fill="#8b6340"/>
+    <ellipse cx="170" cy="28" rx="3.5" ry="3" fill="#a07848"/>
+    <path d="M167,26 C162,16 156,8 150,3" stroke="#7a5030" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <circle cx="150" cy="3" r="2" fill="#7a5030"/>
+    <path d="M173,26 C178,16 184,8 190,3" stroke="#7a5030" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <circle cx="190" cy="3" r="2" fill="#7a5030"/>
+
+    <!-- Purple Morpho @ cx=284 -->
+    <path d="M284,42 C274,26 246,18 241,30 C237,42 252,58 276,56" fill="#c8a8e0" stroke="#8058a0" stroke-width="1"/>
+    <path d="M284,42 C294,26 322,18 327,30 C331,42 316,58 292,56" fill="#c8a8e0" stroke="#8058a0" stroke-width="1"/>
+    <path d="M276,56 C258,64 238,72 236,80 C234,84 252,82 268,70" fill="#b898d0" stroke="#8058a0" stroke-width="1"/>
+    <path d="M292,56 C310,64 330,72 332,80 C334,84 316,82 300,70" fill="#b898d0" stroke="#8058a0" stroke-width="1"/>
+    <circle cx="240" cy="74" r="2.2" fill="#f2e4b0" opacity=".68"/>
+    <circle cx="328" cy="74" r="2.2" fill="#f2e4b0" opacity=".68"/>
+    <ellipse cx="284" cy="54" rx="3.5" ry="16" fill="#52307a"/>
+    <ellipse cx="284" cy="40" rx="3" ry="3.5" fill="#6a40a0"/>
+    <path d="M281,38 C276,28 270,18 264,12" stroke="#52307a" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="264" cy="12" r="1.8" fill="#52307a"/>
+    <path d="M287,38 C292,28 298,18 304,12" stroke="#52307a" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="304" cy="12" r="1.8" fill="#52307a"/>
+  </svg>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     VINE COPULA
+═══════════════════════════════════════════════════════ -->
+<section id="copula">
+  <h2>Vine copula mechanism</h2>
+  <p>
+    When observed data are available, <code>copula_mechanism()</code> fits the full joint
+    dependence structure non-parametrically using D-vine copulas and uses it as the
+    conditional generating rule at simulation time. This captures complex tail dependence
+    and non-linear relationships that parametric models miss.
+  </p>
+
+<pre><code><span class="fn">library</span>(<span class="str">"rvinecopulib"</span>)  <span class="cmt"># required for copula_mechanism</span>
+
+<span class="cmt"># Observed blood pressure data</span>
+<span class="fn">set.seed</span>(<span class="num">42</span>)
+<span class="var">obs</span> <span class="op">&lt;-</span> <span class="fn">data.frame</span>(<span class="arg">sbp</span> <span class="op">=</span> <span class="fn">rnorm</span>(<span class="num">300</span>, <span class="num">130</span>, <span class="num">15</span>))
+<span class="var">obs</span><span class="op">$</span><span class="var">dbp</span> <span class="op">&lt;-</span> <span class="num">0.5</span> <span class="op">*</span> <span class="var">obs</span><span class="op">$</span><span class="var">sbp</span> <span class="op">+</span> <span class="fn">rnorm</span>(<span class="num">300</span>, <span class="num">10</span>, <span class="num">8</span>)
+
+<span class="var">mech_dbp</span> <span class="op">&lt;-</span> <span class="fn">copula_mechanism</span>(
+  <span class="arg">variables</span> <span class="op">=</span> <span class="fn">c</span>(<span class="str">"dbp"</span>, <span class="str">"sbp"</span>),
+  <span class="arg">family</span>    <span class="op">=</span> <span class="str">"auto"</span>,
+  <span class="arg">fit_data</span>  <span class="op">=</span> <span class="var">obs</span>
+)
+
+<span class="var">sys_bp</span> <span class="op">&lt;-</span> <span class="fn">new_system</span>()                     <span class="op">|&gt;</span>
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"sbp"</span>, <span class="str">"continuous"</span>, <span class="fn">list</span>(<span class="arg">min</span><span class="op">=</span><span class="num">70</span>,  <span class="arg">max</span><span class="op">=</span><span class="num">250</span>))) <span class="op">|&gt;</span>
+  <span class="fn">add_feature</span>(<span class="fn">feature_spec</span>(<span class="str">"dbp"</span>, <span class="str">"continuous"</span>, <span class="fn">list</span>(<span class="arg">min</span><span class="op">=</span><span class="num">40</span>,  <span class="arg">max</span><span class="op">=</span><span class="num">150</span>))) <span class="op">|&gt;</span>
+  <span class="fn">add_dependency</span>(<span class="fn">character</span>(<span class="num">0</span>), <span class="str">"sbp"</span>,
+    <span class="fn">mechanism_library_get</span>(<span class="str">"normal"</span>)(<span class="arg">mean</span><span class="op">=</span><span class="num">130</span>, <span class="arg">sd</span><span class="op">=</span><span class="num">15</span>)) <span class="op">|&gt;</span>
+  <span class="fn">add_dependency</span>(<span class="str">"sbp"</span>, <span class="str">"dbp"</span>, <span class="var">mech_dbp</span>)            <span class="op">|&gt;</span>
+  <span class="fn">finalize_system</span>()
+
+<span class="var">sim_bp</span> <span class="op">&lt;-</span> <span class="fn">simulate</span>(<span class="var">sys_bp</span>, <span class="arg">n</span><span class="op">=</span><span class="num">500</span>, <span class="arg">seed</span><span class="op">=</span><span class="num">7</span>)
+
+<span class="cmt"># Dependence preserved</span>
+<span class="fn">cat</span>(<span class="fn">sprintf</span>(<span class="str">"Observed Spearman ρ: %.2f  |  Simulated: %.2f\n"</span>,
+  <span class="fn">cor</span>(<span class="var">obs</span><span class="op">$</span><span class="var">sbp</span>, <span class="var">obs</span><span class="op">$</span><span class="var">dbp</span>, <span class="arg">method</span><span class="op">=</span><span class="str">"spearman"</span>),
+  <span class="fn">cor</span>(<span class="var">sim_bp</span><span class="op">$</span><span class="var">sbp</span>, <span class="var">sim_bp</span><span class="op">$</span><span class="var">dbp</span>, <span class="arg">method</span><span class="op">=</span><span class="str">"spearman"</span>)))</code></pre>
+
+<div class="output">Observed Spearman ρ: 0.87  |  Simulated: 0.86</div>
+
+  <div class="callout info">
+    <div class="label">D-vine algorithm</div>
+    Internally, the mechanism fits a D-vine copula model on <code>fit_data</code>.
+    At simulation time, given the realized parent values, the conditional quantile
+    is obtained via sequential h-function inversion — preserving any non-linear
+    and tail dependence present in the observed data.
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     PAPER ILLUSTRATIONS
+═══════════════════════════════════════════════════════ -->
+<section id="paper">
+  <h2>Paper illustrations</h2>
+  <p>
+    The companion paper works through three illustrations that demonstrate lepidoptera
+    across different application domains and variable-type combinations.
+    See the <a href="https://arxiv.org/abs/2501.08242" target="_blank" rel="noopener">arXiv preprint</a>
+    for full model specifications, code, and numerical results.
+  </p>
+
+  <div class="paper-card ct">
+    <div class="num-badge">I</div>
+    <div>
+      <h4>Clinical trial simulation</h4>
+      <p>
+        A randomised trial with treatment arm (categorical), baseline severity (ordinal),
+        continuous biomarker response, and binary endpoint. The illustration shows how
+        <code>do_fix()</code> on the arm node recovers the estimand of a per-protocol analysis
+        and how <code>mode="partial"</code> produces individual-level response predictions
+        for precision medicine use cases.
+      </p>
+    </div>
+  </div>
+
+  <div class="paper-card ew">
+    <div class="num-badge">II</div>
+    <div>
+      <h4>Emergency-ward digital twin</h4>
+      <p>
+        A five-node system encoding triage severity, wait time, treatment intensity,
+        physiological trajectory, and 30-day readmission. The vine copula mechanism
+        is fitted to anonymised emergency-ward records, preserving the observed
+        tail dependence between wait time and adverse outcomes. The digital twin
+        supports what-if capacity planning without repeated real-world data collection.
+      </p>
+    </div>
+  </div>
+
+  <div class="paper-card med">
+    <div class="num-badge">III</div>
+    <div>
+      <h4>Epidemiological mediation analysis</h4>
+      <p>
+        Estimating natural direct and indirect effects in a mixed-type mediation
+        graph: continuous exposure, ordinal mediator (physical activity level),
+        and binary outcome (metabolic syndrome). <code>mechanism_override()</code>
+        implements the mediation cross-world intervention, and
+        <code>mode="partial"</code> recovers the individual-level decomposition.
+      </p>
+    </div>
+  </div>
+
+  <div class="callout paper">
+    <div class="label">Preprint</div>
+    Sarti, D. A. (2026). <em>lepidoptera: A domain-agnostic causal simulation engine
+    for structural causal models with mixed variable types.</em>
+    <a href="https://arxiv.org/abs/2501.08242" target="_blank" rel="noopener">arXiv:2501.08242 [stat.ME]</a>.
+    Submitted to the <em>Journal of Statistical Software</em>.
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     CITATION
+═══════════════════════════════════════════════════════ -->
+<section id="citation">
+  <h2>Citation</h2>
+  <p>If you use lepidoptera in a publication, please cite:</p>
+
+<pre><code>@misc{sarti2026lepidoptera,
+  title   = {lepidoptera: A domain-agnostic causal simulation engine
+             for structural causal models with mixed variable types},
+  author  = {Sarti, Danilo A.},
+  year    = {2026},
+  eprint  = {2501.08242},
+  archivePrefix = {arXiv},
+  primaryClass  = {stat.ME},
+  url     = {https://arxiv.org/abs/2501.08242}
+}</code></pre>
+
+  <p>Or from R:</p>
+<pre><code><span class="fn">citation</span>(<span class="str">"lepidoptera"</span>)</code></pre>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════════════ -->
+<footer>
+  <div>
+    <strong>lepidoptera</strong> &nbsp;·&nbsp;
+    MIT License &nbsp;·&nbsp;
+    <a href="https://github.com/danilosarti/lepidoptera" target="_blank" rel="noopener">GitHub</a>
+    &nbsp;·&nbsp;
+    <a href="https://CRAN.R-project.org/package=lepidoptera" target="_blank" rel="noopener">CRAN</a>
+    &nbsp;·&nbsp;
+    <a href="https://pypi.org/project/lepidoptera/" target="_blank" rel="noopener">PyPI</a>
+    &nbsp;·&nbsp;
+    <a href="https://arxiv.org/abs/2501.08242" target="_blank" rel="noopener">arXiv</a>
+  </div>
+  <div>
+    Danilo A. Sarti &nbsp;·&nbsp;
+    <a href="mailto:daniloasarti@gmail.com">daniloasarti@gmail.com</a>
+  </div>
+</footer>
+
+</div><!-- /.wrap -->
+
+<script>
+  // Install tab switching
+  document.querySelectorAll('.install-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      var group = tab.closest('.install-group');
+      group.querySelectorAll('.install-tab').forEach(function(t) { t.classList.remove('active'); });
+      group.querySelectorAll('.install-pane').forEach(function(p) { p.classList.remove('active'); });
+      tab.classList.add('active');
+      group.querySelector('#' + tab.dataset.target).classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>
